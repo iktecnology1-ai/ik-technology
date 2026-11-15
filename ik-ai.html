@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070910">
+<title>IK AI — Your intelligent companion</title>
+<style>
+:root{--bg:#070910;--blue:#5b8cff;--cyan:#7ad8ff;--muted:#a4a9ba;--white:#f7f8ff}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--white);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-x:hidden}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 42%,rgba(24,61,137,.16),transparent 38%),radial-gradient(ellipse at 50% 100%,rgba(29,63,130,.12),transparent 45%);z-index:-2}
+.stars{position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(1px 1px at 10% 20%,#fff8 50%,transparent 100%),radial-gradient(1px 1px at 75% 13%,#9bc7ff99 50%,transparent 100%),radial-gradient(1px 1px at 88% 62%,#fff7 50%,transparent 100%),radial-gradient(1px 1px at 24% 77%,#a8caff88 50%,transparent 100%),radial-gradient(1px 1px at 53% 8%,#fff8 50%,transparent 100%);background-size:370px 330px;opacity:.6}
+header{width:min(1160px,calc(100% - 36px));height:66px;margin:20px auto 0;padding:0 20px;border:1px solid #ffffff18;border-radius:999px;background:#080a10b8;backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:space-between;position:relative;z-index:3}
+.brand{display:flex;align-items:center;gap:10px;font-weight:750;letter-spacing:.12em;font-size:13px}.brand-mark{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 35% 30%,#c9efff,#4989ff 35%,#101b45 75%);box-shadow:0 0 22px #478cff66;font-size:12px;color:#061020}
+nav{display:flex;align-items:center;gap:28px}nav a,.signin{color:#c4c8d5;text-decoration:none;font-size:12px}nav a:hover,.signin:hover{color:white}.nav-cta,.primary{border:0;border-radius:999px;padding:12px 20px;background:#f4f6ff;color:#0b1020;font-weight:700;font-size:12px;text-decoration:none;display:inline-flex;align-items:center;gap:10px;cursor:pointer;box-shadow:0 6px 24px #dce8ff18}.nav-cta:hover,.primary:hover{transform:translateY(-1px);background:#dceaff}
+.menu{display:none;background:none;border:0;color:white;font-size:22px}
+.hero{min-height:calc(100svh - 88px);display:flex;align-items:center;justify-content:center;text-align:center;padding:36px 18px 76px;position:relative}
+.hero-inner{width:min(760px,100%);margin:auto}.eyebrow{display:inline-flex;align-items:center;gap:8px;color:#a9c9ff;border:1px solid #5a91ff35;background:#15254a55;border-radius:999px;padding:8px 13px;font-size:10px;letter-spacing:.17em;text-transform:uppercase}
+.pulse{width:6px;height:6px;border-radius:50%;background:#74caff;box-shadow:0 0 12px #74caff}
+.orb-wrap{width:min(350px,78vw);aspect-ratio:1;margin:20px auto 0;position:relative;filter:drop-shadow(0 0 38px #276bff28)}
+canvas{width:100%;height:100%;display:block}
+.orb-halo{position:absolute;inset:13%;border-radius:50%;box-shadow:inset 0 0 55px #3b7dff18,0 0 70px #286bff13;pointer-events:none}
+.voice-switch{display:flex;justify-content:center;gap:4px;margin:-3px auto 20px;padding:4px;border:1px solid #ffffff1a;border-radius:999px;width:max-content;background:#ffffff08}
+.voice-switch button{border:0;border-radius:999px;padding:8px 13px;background:transparent;color:#8f96a8;font-size:9px;letter-spacing:.13em;cursor:pointer}
+.voice-switch button[aria-pressed=true]{background:#273a65;color:white;box-shadow:0 0 16px #548dff22}
+h1{font-size:clamp(31px,6vw,55px);line-height:1.08;letter-spacing:-.045em;margin:18px 0 15px;font-weight:750}
+.gradient{background:linear-gradient(100deg,#f6f8ff 10%,#a8c9ff 52%,#66a5ff 95%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{max-width:530px;margin:0 auto;color:#a3a9b9;font-size:14px;line-height:1.8}
+.actions{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:28px 0 13px}.secondary{border:1px solid #ffffff25;border-radius:999px;padding:12px 20px;color:#e4e8f5;text-decoration:none;font-size:12px;background:#ffffff08}.secondary:hover{background:#ffffff13}
+.note{color:#747c90;font-size:10px;margin-top:15px}
+.section{padding:88px 20px;width:min(1080px,100%);margin:auto;text-align:center}.section h2{font-size:clamp(26px,4vw,38px);letter-spacing:-.03em;margin:12px 0}.section p{color:var(--muted);line-height:1.8;max-width:620px;margin:0 auto}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:34px;text-align:left}.card{border:1px solid #ffffff17;background:linear-gradient(145deg,#111827aa,#0b0e18aa);border-radius:20px;padding:24px;min-height:170px}.card .symbol{font-size:22px;color:#8bb6ff}.card h3{font-size:15px;margin:18px 0 8px}.card p{font-size:12px;margin:0;color:#9ba3b7}
+footer{border-top:1px solid #ffffff12;padding:25px 20px;color:#777f92;font-size:11px;text-align:center}footer strong{color:#dce5ff}
+@media(max-width:680px){header{height:58px;margin-top:12px;padding:0 14px}.menu{display:block}nav{display:none;position:absolute;top:66px;left:0;right:0;padding:18px;background:#0b0e18;border:1px solid #ffffff18;border-radius:18px;flex-direction:column;gap:18px}nav.open{display:flex}.signin{display:none}.hero{min-height:calc(100svh - 70px);padding-top:28px}.orb-wrap{margin-top:12px}.cards{grid-template-columns:1fr}.section{padding:65px 20px}}
+</style>
+</head>
+<body>
+<div class="stars"></div>
+<header>
+  <a class="brand" href="#" aria-label="IK Technology home" style="text-decoration:none;color:white"><span class="brand-mark">IK</span><span>IK TECHNOLOGY</span></a>
+  <button class="menu" id="menu" aria-label="Open menu">☰</button>
+  <nav id="nav"><a href="#about">About</a><a href="#features">Features</a><a href="#plans">Plans</a><a href="#support">Support</a><a class="nav-cta" href="#launch">Get Started&nbsp; ↗</a></nav>
+  <a class="signin" href="#launch">Sign in</a>
+</header>
+<main>
+<section class="hero" id="launch">
+ <div class="hero-inner">
+  <div class="eyebrow"><span class="pulse"></span> A new way to interact with AI</div>
+  <div class="orb-wrap"><canvas id="orb" aria-label="Animated blue particle orb"></canvas><div class="orb-halo"></div></div>
+  <div class="voice-switch" aria-label="Voice style">
+   <button type="button" data-mode="CORE" aria-pressed="false">CORE</button>
+   <button type="button" data-mode="FEMALE" aria-pressed="true">FEMALE</button>
+   <button type="button" data-mode="MALE" aria-pressed="false">MALE</button>
+  </div>
+  <h1>Your intelligent <span class="gradient">AI companion.</span></h1>
+  <p class="sub" id="tagline">A smarter way to ask, learn, create and get things done — with IK AI.</p>
+  <div class="actions"><a class="primary" href="#features">Explore IK AI&nbsp; →</a><a class="secondary" href="#about">Discover more&nbsp; ↗</a></div>
+  <div class="note">An initiative by IK Technology</div>
+ </div>
+</section>
+<section class="section" id="about"><div class="eyebrow">Meet IK AI</div><h2>Technology that feels <span class="gradient">closer.</span></h2><p>IK AI is being built to make helpful AI conversations feel simple, natural and accessible. Ask questions, explore ideas and get help in one place.</p></section>
+<section class="section" id="features"><div class="eyebrow">Designed around you</div><h2>One companion. Many possibilities.</h2><div class="cards">
+ <article class="card"><div class="symbol">✳</div><h3>Natural conversations</h3><p>Chat naturally and get clear, useful responses.</p></article>
+ <article class="card"><div class="symbol">◉</div><h3>Voice experience</h3><pA>Choose a voice style and explore a more personal AI experience.</pA></article>
+ <article class="card"><div class="symbol">⌁</div><h3>Understand images</h3><p>Share an image and ask questions about what you see.</p></article>
+ </div></section>
+<section class="section" id="plans"><div class="eyebrow">Plans</div><h2>Simple plans. <span class="gradient">More possibilities.</span></h2><p>Plan details and availability will be announced soon.</p></section>
+<section class="section" id="support"><div class="eyebrow">Support</div><h2>We're building with you.</h2><p>For updates and support, follow the official IK Technology channels when they are announced.</p></section>
+</main>
+<footer>© <span id="year"></span> <strong>IK Technology</strong>. Built with a vision by Imran.</footer>
+<script>
+const canvas=document.getElementById('orb'),ctx=canvas.getContext('2d');let w,h,dpr,particles=[],mode='FEMALE',tick=0;
+function resize(){const r=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);w=r.width;h=r.height;canvas.width=w*dpr;canvas.height=h*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);particles=[];const n=Math.round(Math.min(2300,Math.max(900,w*5.2)));for(let i=0;i<n;i++){const z=Math.random()*2-1,a=Math.random()*Math.PI*2,rad=Math.sqrt(1-z*z);particles.push({x:rad*Math.cos(a),y:z,z2:rad*Math.sin(a),s:Math.random()*1.15+.25,p:Math.random()*6.28})}}
+function draw(){tick+=.006;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h/2,R=Math.min(w,h)*.365,rot=tick*.22;for(const p of particles){const x=p.x*Math.cos(rot)-p.z2*Math.sin(rot),z=p.x*Math.sin(rot)+p.z2*Math.cos(rot);const pulse=1+.018*Math.sin(tick*2+p.p);const px=cx+x*R*pulse,py=cy+p.y*R*pulse;const depth=(z+1)/2,alpha=.17+depth*.72;const size=p.s*(.45+depth*.8);ctx.beginPath();ctx.fillStyle=`rgba(${mode==='CORE'?'115,190,255':mode==='MALE'?'95,151,255':'92,173,255'},${alpha})`;ctx.shadowBlur=depth*7;ctx.shadowColor='#4a8dff';ctx.arc(px,py,size,0,Math.PI*2);ctx.fill()}
+ctx.shadowBlur=0;const glow=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.22);glow.addColorStop(0,'rgba(255,255,255,.98)');glow.addColorStop(.035,'rgba(172,218,255,.95)');glow.addColorStop(.16,'rgba(76,145,255,.19)');glow.addColorStop(1,'rgba(40,100,255,0)');ctx.fillStyle=glow;ctx.beginPath();ctx.arc(cx,cy,R*.23,0,Math.PI*2);ctx.fill();requestAnimationFrame(draw)}
+new ResizeObserver(resize).observe(canvas);resize();draw();
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>{mode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));document.getElementById('tagline').textContent=mode==='CORE'?'Focused, clear and ready to help — meet IK AI.':mode==='MALE'?'A confident voice for your ideas, questions and everyday tasks.':'A warm, natural companion for your ideas, questions and everyday tasks.'}));
+document.getElementById('menu').addEventListener('click',()=>document.getElementById('nav').classList.toggle('open'));document.querySelectorAll('#nav a').forEach(a=>a.addEventListener('click',()=>document.getElementById('nav').classList.remove('open')));document.getElementById('year').textContent=new Date().getFullYear();
+</script>
+</body></html>
