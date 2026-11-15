@@ -1,116 +1,143 @@
-<!doctype html>
-<html lang="hi">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#050a14">
-<title>IK BODAM ASSISTANT — IK Technology</title>
-<link rel="stylesheet" href="bodam.css">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#070910">
+<title>IK BODAM — Your Intelligent AI Companion</title>
+<style>
+:root{--bg:#070910;--blue:#75adff;--cyan:#42bfff;--muted:#9da5b6;--line:#252b3a}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:var(--bg);color:#f6f7fc;font-family:Inter,Arial,sans-serif;overflow-x:hidden}
+.bg{position:fixed;inset:0;z-index:-2;background:radial-gradient(ellipse at 50% 48%,#10182b 0,#090d18 42%,#06080e 82%)}
+.bg:after{content:"";position:absolute;inset:0;opacity:.42;background-image:radial-gradient(1px 1px at 11% 17%,#dceaff 99%,transparent),radial-gradient(1px 1px at 76% 23%,#8dbbff 99%,transparent),radial-gradient(1px 1px at 24% 76%,#fff 99%,transparent),radial-gradient(1px 1px at 88% 71%,#9dc9ff 99%,transparent);background-size:290px 250px}
+header{height:76px;width:min(94%,1260px);margin:auto;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff0c;position:relative;z-index:4}
+.brand{font-weight:800;letter-spacing:2px;font-size:16px}.brand small{display:block;color:#8f9aaf;font-size:9px;letter-spacing:3px;margin-top:4px}
+nav{display:flex;align-items:center;gap:28px}nav a{font-size:13px;color:#c4cad7;text-decoration:none}nav a:hover{color:white}.status{font-size:11px;color:#76e7ad}
+main{width:min(1240px,94%);margin:0 auto;min-height:calc(100vh - 76px);display:flex;align-items:center;justify-content:center;padding:36px 0 60px}
+.hero{width:100%;display:grid;grid-template-columns:1.05fr 1fr;align-items:center;gap:36px}
+.visual{height:min(650px,75vh);min-height:430px;position:relative;display:grid;place-items:center}
+.visual:before{content:"";position:absolute;width:78%;aspect-ratio:1;border-radius:50%;background:#1268e8;filter:blur(95px);opacity:.13}\n.visual:after{content:"";position:absolute;width:88%;height:25%;border:1px solid #2d8fff55;border-radius:50%;transform:rotate(-9deg);box-shadow:0 0 22px #168bff33;pointer-events:none}
+#orb{width:100%;height:100%;position:absolute;inset:0}
+.orb-label{position:absolute;bottom:8%;font-size:10px;letter-spacing:4px;color:#8498b8}
+.copy{padding:28px 16px 28px 0}
+.eyebrow{display:inline-flex;align-items:center;gap:11px;padding:13px 22px;border:1px solid #263755;border-radius:40px;background:#1017298c;color:#b8cfff;font-size:12px;letter-spacing:3px}
+.eyebrow i{width:9px;height:9px;background:#69caff;border-radius:50%;box-shadow:0 0 12px #69caff}
+.modes{display:flex;gap:0;width:max-content;max-width:100%;padding:5px;border:1px solid #303544;border-radius:40px;background:#11141d;margin:34px 0 34px}
+.mode{border:0;border-radius:30px;background:transparent;color:#929aaa;padding:13px 24px;font-size:12px;letter-spacing:2px;cursor:pointer}
+.mode.active{background:#263d72;color:white;box-shadow:0 0 22px #3159a055}
+h1{font-size:clamp(42px,5.5vw,72px);line-height:1.08;letter-spacing:-2.8px;margin:0 0 22px;font-weight:780}
+h1 span{background:linear-gradient(90deg,#eaf2ff,#7eafff);background-clip:text;-webkit-background-clip:text;color:transparent}
+.desc{max-width:600px;color:#a7adba;font-size:clamp(17px,1.8vw,22px);line-height:1.8;margin:0 0 38px}
+.actions{display:flex;gap:15px;flex-wrap:wrap}.btn{min-width:190px;text-align:center;text-decoration:none;padding:19px 27px;border-radius:40px;font-size:16px;color:#e9edf6;border:1px solid #343947;background:#11141c;cursor:pointer}
+.btn.primary{background:#f4f6ff;color:#101522;border-color:#f4f6ff;font-weight:700;box-shadow:0 8px 35px #b8cfff18}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.12)}
+.credit{color:#747d8e;font-size:14px;margin:28px 0 0 8px}
+#workspace{display:none;width:100%;max-width:1160px}
+.workspace-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #293247;padding:18px 0}
+.workspace-head h2{letter-spacing:2px}.back{border:1px solid #36435c;background:#101827;color:#eef4ff;padding:12px 18px;border-radius:30px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
+.tile{border:1px solid #263957;background:linear-gradient(145deg,#111a2b,#090e18);padding:24px;border-radius:16px;min-height:140px}
+.tile b{color:#8fc5ff;letter-spacing:1px}.tile p{color:#a7b2c4;line-height:1.6;font-size:14px}
+@media(max-width:760px){
+ header{height:62px;width:92%}nav{gap:14px}nav a:not(:first-child){display:none}
+ main{width:100%;padding:28px 20px 55px;min-height:calc(100vh - 62px)}
+ .hero{display:flex;flex-direction:column;gap:0;text-align:center}
+ .visual{width:100%;height:clamp(300px,43vh,430px);min-height:300px;order:0}
+ .copy{padding:0;width:100%;display:flex;align-items:center;flex-direction:column}
+ .eyebrow{font-size:10px;letter-spacing:2.4px;padding:11px 17px}
+ .modes{margin:18px 0 32px}
+ .mode{padding:12px 21px}
+ h1{font-size:clamp(39px,8.5vw,54px);letter-spacing:-1.8px;margin-bottom:24px}
+ .desc{font-size:18px;line-height:1.8;margin-bottom:35px}
+ .actions{justify-content:center;width:100%;gap:12px}
+ .btn{min-width:0;flex:1;padding:18px 14px;font-size:15px}
+ .credit{margin:25px 0 0}
+ .tiles{grid-template-columns:1fr}
+}
+@media(max-width:380px){.mode{padding:11px 16px;font-size:11px}.btn{font-size:13px}.visual{height:300px}}
+</style>
 </head>
 <body>
-
-<!-- ===== ऊपर की पट्टी ===== -->
-<header class="topbar">
-  <div class="brand"><span class="logo">IK</span><div><b>IK BODAM</b><small>by IK TECHNOLOGY</small></div></div>
-  <nav class="tabs" id="tabs" aria-label="सेक्शन">
-    <button data-tab="chat" class="active">चैट</button>
-    <button data-tab="devices">डिवाइस</button>
-    <button data-tab="remote">रिमोट</button>
-    <button data-tab="memory">मेमोरी</button>
-    <button data-tab="settings">सेटिंग्स</button>
-  </nav>
-  <button class="profile-btn" id="openLogin" aria-label="यूज़र प्रोफ़ाइल">👤</button>
+<div class="bg"></div><canvas id="spacefield" aria-hidden="true" style="position:fixed;inset:0;width:100%;height:100%;z-index:-1;pointer-events:none"></canvas>
+<header>
+ <div class="brand">✦ IK BODAM<small>PERSONAL AI SYSTEM</small></div>
+ <nav><a href="#" id="homeLink">Home</a><a href="#features" id="featuresLink">Features</a><a href="#about">About</a></nav>
+ <div class="status">● SYSTEM ONLINE</div>
 </header>
-
-<main class="app">
-
-  <!-- ===== AI Orb + Voice Animation ===== -->
-  <section class="orb-area">
-    <div class="orb" id="orb" data-state="idle">
-      <span class="ring r1"></span><span class="ring r2"></span><span class="ring r3"></span>
-      <div class="core"></div>
-      <div class="wave" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-    </div>
-    <p class="status" id="status">तैयार — बोलने के लिए 🎙 दबाएँ या लिखें</p>
-  </section>
-
-  <!-- ===== CHAT ===== -->
-  <section class="panel show" id="tab-chat">
-    <div class="panel-head">
-      <h2>चैट</h2>
-      <button class="ghost" id="newChat">＋ New Chat</button>
-    </div>
-    <div class="chat" id="chat" aria-live="polite"></div>
-    <form class="command" id="form" autocomplete="off">
-      <button type="button" class="mic" id="mic" aria-label="बोलकर कमांड दें">🎙</button>
-      <input id="input" type="text" placeholder="कमांड या सवाल लिखें…" aria-label="Command Input" maxlength="500">
-      <button type="submit" class="send" aria-label="भेजें">➤</button>
-    </form>
-    <p class="hint">अभी AI Brain जुड़ा नहीं है (V2 में BODAM 10.6)। अभी सिर्फ़ डेमो जवाब मिलेंगे।</p>
-  </section>
-
-  <!-- ===== CONNECTED DEVICES ===== -->
-  <section class="panel" id="tab-devices">
-    <div class="panel-head"><h2>Connected Devices</h2><span class="badge">डेमो डेटा</span></div>
-    <div class="list" id="deviceList"></div>
-    <div class="card pair">
-      <h3>नया डिवाइस जोड़ें (Pairing)</h3>
-      <p>V3 में यहाँ असली पेयरिंग कोड बनेगा। अभी सिर्फ़ डिज़ाइन है।</p>
-      <div class="code">XXXX-XXXX</div>
-      <button class="ghost" disabled>Pair Device (V3)</button>
-    </div>
-  </section>
-
-  <!-- ===== REMOTE CONTROL ===== -->
-  <section class="panel" id="tab-remote">
-    <div class="panel-head"><h2>Remote Control Dashboard</h2><span class="badge">V3 में चालू</span></div>
-    <div class="grid2">
-      <div class="card"><h3>रिमोट कमांड भेजें</h3><p>चुने हुए डिवाइस को निर्देश भेजना।</p><button class="ghost" disabled>भेजें</button></div>
-      <div class="card"><h3>काम की स्थिति</h3><p>कोई काम नहीं चल रहा।</p></div>
-      <div class="card"><h3>स्क्रीन शेयरिंग</h3><p>डिवाइस की स्क्रीन देखना।</p><button class="ghost" disabled>शुरू करें</button></div>
-      <div class="card"><h3>डिवाइस डिस्कनेक्ट</h3><p>किसी भी समय कनेक्शन तोड़ें।</p><button class="ghost" disabled>Disconnect</button></div>
-    </div>
-    <p class="hint">हर रिमोट एक्शन के लिए मालिक की अनुमति और सुरक्षित लॉगिन ज़रूरी रहेगा।</p>
-  </section>
-
-  <!-- ===== MEMORY ===== -->
-  <section class="panel" id="tab-memory">
-    <div class="panel-head"><h2>Memory Dashboard</h2><button class="ghost danger" id="clearMem">सब मिटाएँ</button></div>
-    <form class="command" id="memForm" autocomplete="off">
-      <input id="memInput" type="text" placeholder="कोई बात याद रखवाएँ…" maxlength="200" aria-label="नई मेमोरी">
-      <button type="submit" class="send" aria-label="जोड़ें">＋</button>
-    </form>
-    <div class="list" id="memList"></div>
-    <p class="hint">यह जानकारी सिर्फ़ आपके इसी फोन के ब्राउज़र में रहती है। पासवर्ड या API Key यहाँ मत लिखें।</p>
-  </section>
-
-  <!-- ===== SETTINGS ===== -->
-  <section class="panel" id="tab-settings">
-    <div class="panel-head"><h2>Settings</h2></div>
-    <label class="row"><span>Voice Reply (बोलकर जवाब)</span><input type="checkbox" id="setVoice"></label>
-    <label class="row"><span>Glow Effects</span><input type="checkbox" id="setGlow" checked></label>
-    <label class="row"><span>आपका नाम</span><input type="text" id="setName" placeholder="जैसे: Imran" maxlength="30"></label>
-    <div class="card"><h3>AI Brain</h3><p>अभी: डेमो मोड। भविष्य में: BODAM 10.6 API (तैयार होने पर)।</p></div>
-  </section>
-</main>
-
-<footer class="foot">
-  <p>Developer / Designer: <b>Imran</b> · Organization: <b>IK TECHNOLOGY</b> · Project: <b>IK BODAM ASSISTANT</b></p>
-  <a href="https://iktecnology1-ai.github.io/ik-technology/" target="_blank" rel="noopener">Official Website: iktecnology1-ai.github.io/ik-technology</a>
-</footer>
-
-<!-- ===== LOGIN / PROFILE (सिर्फ़ डिज़ाइन) ===== -->
-<div class="modal" id="modal" hidden>
-  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
-    <button class="close" id="closeLogin" aria-label="बंद करें">✕</button>
-    <h2 id="loginTitle">User Profile / Login</h2>
-    <p class="hint">यह सिर्फ़ डिज़ाइन है। असली सुरक्षित लॉगिन V3 में Backend के साथ बनेगा। यहाँ असली पासवर्ड मत डालें।</p>
-    <input type="email" placeholder="Email (डेमो)" disabled>
-    <input type="password" placeholder="Password (डेमो)" disabled>
-    <button class="primary" disabled>Login (जल्द आ रहा है)</button>
+<main>
+<section class="hero" id="landing">
+ <div class="visual">
+  <canvas id="orb" aria-label="Animated blue particle AI sphere"></canvas>
+  <div class="orb-label">IK BODAM • CORE INTELLIGENCE</div>
+ </div>
+ <div class="copy">
+  <div class="eyebrow"><i></i> A NEW WAY TO INTERACT WITH AI</div>
+  <div class="modes" aria-label="Select AI character">
+   <button class="mode" data-mode="CORE">CORE</button><button class="mode active" data-mode="FEMALE">FEMALE</button><button class="mode" data-mode="MALE">MALE</button>
   </div>
-</div>
+  <h1>Your intelligent AI<br><span>companion.</span></h1>
+  <p class="desc">A smarter way to ask, learn, create and get things done — with IK BODAM.</p>
+  <div class="actions"><button class="btn primary" id="explore">GET STARTED&nbsp; →</button><a class="btn" href="#about" id="discover">Discover more&nbsp; ↗</a></div>
+  <p class="credit">An initiative by IK Technology</p>
+ </div>
+</section>
+<section id="workspace">
+ <div class="workspace-head"><div><h2>IK BODAM COMMAND CENTER</h2><small style="color:#8d9bb2">PERSONAL AI WORKSPACE</small></div><button class="back" id="back">← Home</button></div>
+ <h2>Welcome to IK BODAM.</h2><p style="color:#a7b2c4">Choose a module to continue.</p>
+ <div class="tiles" id="features">
+  <div class="tile"><b>◉ VOICE ASSISTANT</b><p>Talk with your personal AI assistant.</p></div>
+  <div class="tile"><b>✧ AI TOOLS</b><p>Explore intelligent tools and capabilities.</p></div>
+  <div class="tile"><b>▤ MEMORY</b><p>Manage your saved information.</p></div>
+  <div class="tile"><b>⌘ REMOTE CONTROL</b><p>Connect and control your own authorized devices with permission.</p></div>
+  <div class="tile"><b>⚙ SETTINGS</b><p>Customize your AI experience.</p></div>
+  <div class="tile"><b>ⓘ ABOUT</b><p>Learn about IK BODAM and IK Technology.</p></div>
+ </div>
+</section>
+</main>
+<script>
 
-<script src="bodam.js"></script>
-</body>
-</html>
+// Slow cinematic moving starfield, inspired by the reference atmosphere.
+const sky=document.getElementById('spacefield'), skyCtx=sky.getContext('2d');
+let stars=[], sw=0, sh=0, lastSky=0;
+function resizeSky(){
+ const dpr=Math.min(devicePixelRatio||1,2);
+ sw=innerWidth; sh=innerHeight;
+ sky.width=sw*dpr; sky.height=sh*dpr;
+ skyCtx.setTransform(dpr,0,0,dpr,0,0);
+ stars=Array.from({length:Math.min(190,Math.floor(sw*sh/6500))},()=>({
+  x:Math.random()*sw,y:Math.random()*sh,
+  r:.35+Math.random()*1.15,
+  speed:.12+Math.random()*.38,
+  drift:(Math.random()-.5)*.12,
+  phase:Math.random()*Math.PI*2
+ }));
+}
+function moveSpace(t){
+ const dt=Math.min((t-lastSky)/16.67||1,2); lastSky=t;
+ skyCtx.clearRect(0,0,sw,sh);
+ for(const s of stars){
+  s.y+=s.speed*dt; s.x+=s.drift*dt;
+  if(s.y>sh+3){s.y=-3;s.x=Math.random()*sw}
+  if(s.x>sw+3)s.x=-3; if(s.x<-3)s.x=sw+3;
+  const tw=.45+.55*(.5+.5*Math.sin(t*.0007+s.phase));
+  skyCtx.beginPath();
+  skyCtx.fillStyle=`rgba(155,190,255,${tw*.62})`;
+  skyCtx.shadowBlur=5*tw; skyCtx.shadowColor='#579cff';
+  skyCtx.arc(s.x,s.y,s.r*tw,0,Math.PI*2); skyCtx.fill();
+ }
+ skyCtx.shadowBlur=0;
+ requestAnimationFrame(moveSpace);
+}
+addEventListener('resize',resizeSky,{passive:true});
+resizeSky();requestAnimationFrame(moveSpace);
+
+const canvas=document.getElementById('orb'),ctx=canvas.getContext('2d');let w=0,h=0,particles=[],mode='FEMALE',rotation=0;
+function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,2);canvas.width=r.width*dpr;canvas.height=r.height*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);w=r.width;h=r.height;particles=[];const n=Math.min(1800,Math.max(700,Math.floor(w*h/230)));for(let i=0;i<n;i++){const y=1-2*(i+.5)/n,rad=Math.sqrt(1-y*y),a=Math.PI*(1+Math.sqrt(5))*i;particles.push({x:Math.cos(a)*rad,y,z:Math.sin(a)*rad,seed:Math.random()*6.28,size:.45+Math.random()*1.25})}}
+function draw(t){ctx.clearRect(0,0,w,h);rotation+=.0022;const radius=Math.min(w*.39,h*.43),cx=w/2,cy=h*.47;const hue=mode==='FEMALE'?'145,185,255':mode==='MALE'?'75,190,255':'105,215,255';const sorted=[];for(const p of particles){const tilt=rotation, x=p.x, y=p.y*Math.cos(tilt)-p.z*Math.sin(tilt), z=p.y*Math.sin(tilt)+p.z*Math.cos(tilt);const perspective=2.7/(2.7-z);sorted.push({sx:cx+x*radius,sy:cy+y*radius,depth:z,perspective,size:p.size*(.65+perspective*.22),twinkle:.55+.45*Math.sin(t*.002+p.seed)})}sorted.sort((a,b)=>a.depth-b.depth);for(const p of sorted){const alpha=(.22+(p.depth+1)*.32)*p.twinkle;ctx.beginPath();ctx.fillStyle=`rgba(${hue},${alpha})`;ctx.shadowBlur=p.depth>.25?8:3;ctx.shadowColor=`rgb(${hue})`;ctx.arc(p.sx,p.sy,p.size*p.perspective,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;requestAnimationFrame(draw)}
+function setMode(m){mode=m;document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===m))}
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+function enter(){document.getElementById('landing').style.display='none';document.getElementById('workspace').style.display='block';window.scrollTo(0,0)}
+function home(){document.getElementById('workspace').style.display='none';document.getElementById('landing').style.display='grid';window.scrollTo(0,0)}
+document.getElementById('explore').onclick=enter;document.getElementById('back').onclick=home;document.getElementById('homeLink').onclick=e=>{e.preventDefault();home()};document.getElementById('featuresLink').onclick=e=>{e.preventDefault();enter()};document.getElementById('discover').onclick=e=>{e.preventDefault();document.querySelector('.desc').textContent='Meet your personal AI companion — voice assistance, intelligent tools, memory and secure device control.'};
+new ResizeObserver(resize).observe(canvas);resize();requestAnimationFrame(draw);
+</script>
+</body></html>
