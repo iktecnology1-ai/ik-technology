@@ -37,6 +37,25 @@ h1 span{background:linear-gradient(90deg,#eaf2ff,#7eafff);background-clip:text;-
 .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:26px}
 .tile{border:1px solid #263957;background:linear-gradient(145deg,#111a2b,#090e18);padding:24px;border-radius:16px;min-height:140px}
 .tile b{color:#8fc5ff;letter-spacing:1px}.tile p{color:#a7b2c4;line-height:1.6;font-size:14px}
+
+.chat-shell{max-width:900px;margin:34px auto 0;border:1px solid #263957;border-radius:22px;background:linear-gradient(145deg,#101827eF,#080e19f5);overflow:hidden;box-shadow:0 25px 90px #0007}
+.assistant-top{display:flex;align-items:center;gap:16px;padding:22px 26px;border-bottom:1px solid #263247}
+.assistant-orb{width:52px;height:52px;display:grid;place-items:center;border-radius:50%;font-size:25px;color:#d9eaff;background:radial-gradient(circle at 35% 30%,#8cc8ff,#17458a 55%,#07152b);box-shadow:0 0 28px #398dff55}
+.assistant-top h2{margin:0;font-size:18px;letter-spacing:2px}.assistant-top p{margin:6px 0 0;font-size:10px;letter-spacing:2px;color:#92a4bf}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#55e4a1;box-shadow:0 0 9px #55e4a1;margin-right:6px}
+.active-mode{margin-left:auto;border:1px solid #344968;color:#a9caff;border-radius:22px;padding:9px 13px;font-size:10px;letter-spacing:1px}
+.chat-body{min-height:350px;padding:28px;display:flex;flex-direction:column;align-items:flex-start;gap:22px}
+.message{max-width:78%;padding:17px 19px;border-radius:4px 18px 18px 18px;background:#15243a;border:1px solid #29466e;color:#e7efff;line-height:1.7}
+.message p{margin:7px 0 0}.message-tag{font-size:9px;letter-spacing:2px;color:#8fc3ff;font-weight:700}
+.user-message{align-self:flex-end;border-radius:18px 4px 18px 18px;background:#20365a}
+.quick-prompts{display:flex;gap:10px;flex-wrap:wrap}
+.prompt{border:1px solid #344968;background:#0c1524;color:#a9caff;padding:10px 14px;border-radius:22px;font-size:12px;cursor:pointer}
+.chat-input-area{display:flex;gap:10px;padding:18px 20px;border-top:1px solid #263247}
+.chat-input-area input{flex:1;min-width:0;background:#080e19;border:1px solid #2a3b56;border-radius:30px;padding:16px 20px;color:#f5f7ff;font-size:15px;outline:none}
+.chat-input-area input:focus{border-color:#559bff}
+.send-btn{width:50px;height:50px;border:0;border-radius:50%;background:#edf4ff;color:#0a1425;font-size:21px;cursor:pointer}
+.chat-note{text-align:center;color:#78869c;font-size:11px;padding:0 12px 17px;margin:0}
+
 @media(max-width:760px){
  header{height:62px;width:92%}nav{gap:14px}nav a:not(:first-child){display:none}
  main{width:100%;padding:28px 20px 55px;min-height:calc(100vh - 62px)}
@@ -53,6 +72,17 @@ h1 span{background:linear-gradient(90deg,#eaf2ff,#7eafff);background-clip:text;-
  .credit{margin:25px 0 0}
  .tiles{grid-template-columns:1fr}
 }
+
+ .chat-shell{margin-top:22px;border-radius:17px}
+ .assistant-top{padding:17px 15px;gap:11px}
+ .assistant-orb{width:43px;height:43px}
+ .assistant-top h2{font-size:15px}
+ .active-mode{font-size:8px;padding:8px}
+ .chat-body{padding:20px 14px;min-height:340px}
+ .message{max-width:92%;font-size:14px}
+ .chat-input-area{padding:13px 12px}
+ .chat-input-area input{font-size:14px;padding:14px 16px}
+
 @media(max-width:380px){.mode{padding:11px 16px;font-size:11px}.btn{font-size:13px}.visual{height:300px}}
 </style>
 </head>
@@ -81,15 +111,32 @@ h1 span{background:linear-gradient(90deg,#eaf2ff,#7eafff);background-clip:text;-
  </div>
 </section>
 <section id="workspace">
- <div class="workspace-head"><div><h2>IK BODAM COMMAND CENTER</h2><small style="color:#8d9bb2">PERSONAL AI WORKSPACE</small></div><button class="back" id="back">← Home</button></div>
- <h2>Welcome to IK BODAM.</h2><p style="color:#a7b2c4">Choose a module to continue.</p>
- <div class="tiles" id="features">
-  <div class="tile"><b>◉ VOICE ASSISTANT</b><p>Talk with your personal AI assistant.</p></div>
-  <div class="tile"><b>✧ AI TOOLS</b><p>Explore intelligent tools and capabilities.</p></div>
-  <div class="tile"><b>▤ MEMORY</b><p>Manage your saved information.</p></div>
-  <div class="tile"><b>⌘ REMOTE CONTROL</b><p>Connect and control your own authorized devices with permission.</p></div>
-  <div class="tile"><b>⚙ SETTINGS</b><p>Customize your AI experience.</p></div>
-  <div class="tile"><b>ⓘ ABOUT</b><p>Learn about IK BODAM and IK Technology.</p></div>
+ <div class="workspace-head">
+  <div><h2>IK BODAM AI</h2><small style="color:#8d9bb2">PERSONAL INTELLIGENCE INTERFACE</small></div>
+  <button class="back" id="back">← Home</button>
+ </div>
+ <div class="chat-shell">
+  <div class="assistant-top">
+   <div class="assistant-orb">✦</div>
+   <div><h2>IK BODAM</h2><p><span class="live-dot"></span> READY TO ASSIST</p></div>
+   <div class="active-mode" id="activeMode">FEMALE MODE</div>
+  </div>
+  <div class="chat-body" id="chatBody">
+   <div class="message assistant-message">
+    <span class="message-tag">IK BODAM</span>
+    <p>Hello! I'm IK BODAM, your personal AI assistant. How can I help you today?</p>
+   </div>
+   <div class="quick-prompts">
+    <button class="prompt" data-prompt="Tell me about your capabilities">Explore capabilities</button>
+    <button class="prompt" data-prompt="Help me write something">Writing help</button>
+    <button class="prompt" data-prompt="Explain a topic to me">Learn something</button>
+   </div>
+  </div>
+  <form class="chat-input-area" id="chatForm">
+   <input id="chatInput" type="text" autocomplete="off" placeholder="Message IK BODAM..." aria-label="Message IK BODAM">
+   <button class="send-btn" type="submit" aria-label="Send message">➤</button>
+  </form>
+  <p class="chat-note">AI responses require a connected model API. This screen is the interface only.</p>
  </div>
 </section>
 </main>
@@ -135,7 +182,11 @@ function resize(){const r=canvas.getBoundingClientRect(),dpr=Math.min(devicePixe
 function draw(t){ctx.clearRect(0,0,w,h);rotation+=.0022;const radius=Math.min(w*.39,h*.43),cx=w/2,cy=h*.47;const hue=mode==='FEMALE'?'145,185,255':mode==='MALE'?'75,190,255':'105,215,255';const sorted=[];for(const p of particles){const tilt=rotation, x=p.x, y=p.y*Math.cos(tilt)-p.z*Math.sin(tilt), z=p.y*Math.sin(tilt)+p.z*Math.cos(tilt);const perspective=2.7/(2.7-z);sorted.push({sx:cx+x*radius,sy:cy+y*radius,depth:z,perspective,size:p.size*(.65+perspective*.22),twinkle:.55+.45*Math.sin(t*.002+p.seed)})}sorted.sort((a,b)=>a.depth-b.depth);for(const p of sorted){const alpha=(.22+(p.depth+1)*.32)*p.twinkle;ctx.beginPath();ctx.fillStyle=`rgba(${hue},${alpha})`;ctx.shadowBlur=p.depth>.25?8:3;ctx.shadowColor=`rgb(${hue})`;ctx.arc(p.sx,p.sy,p.size*p.perspective,0,Math.PI*2);ctx.fill()}ctx.shadowBlur=0;requestAnimationFrame(draw)}
 function setMode(m){mode=m;document.querySelectorAll('.mode').forEach(b=>b.classList.toggle('active',b.dataset.mode===m))}
 document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
-function enter(){document.getElementById('landing').style.display='none';document.getElementById('workspace').style.display='block';window.scrollTo(0,0)}
+function enter(){document.getElementById('landing').style.display='none';document.getElementById('workspace').style.display='block';document.getElementById('activeMode').textContent=mode+' MODE';window.scrollTo(0,0)}
+const chatBody=document.getElementById('chatBody'),chatInput=document.getElementById('chatInput');
+function addChatMessage(text,kind){const box=document.createElement('div');box.className='message '+(kind==='user'?'user-message':'assistant-message');const tag=document.createElement('span');tag.className='message-tag';tag.textContent=kind==='user'?'YOU':'IK BODAM';const para=document.createElement('p');para.textContent=text;box.append(tag,para);chatBody.appendChild(box);chatBody.scrollTop=chatBody.scrollHeight;}
+document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();const value=chatInput.value.trim();if(!value)return;addChatMessage(value,'user');chatInput.value='';addChatMessage('The assistant interface is ready. Connect your AI model API to enable live intelligent responses.','assistant');});
+document.querySelectorAll('.prompt').forEach(b=>b.addEventListener('click',()=>{chatInput.value=b.dataset.prompt;chatInput.focus();}));
 function home(){document.getElementById('workspace').style.display='none';document.getElementById('landing').style.display='grid';window.scrollTo(0,0)}
 document.getElementById('explore').onclick=enter;document.getElementById('back').onclick=home;document.getElementById('homeLink').onclick=e=>{e.preventDefault();home()};document.getElementById('featuresLink').onclick=e=>{e.preventDefault();enter()};document.getElementById('discover').onclick=e=>{e.preventDefault();document.querySelector('.desc').textContent='Meet your personal AI companion — voice assistance, intelligent tools, memory and secure device control.'};
 new ResizeObserver(resize).observe(canvas);resize();requestAnimationFrame(draw);
