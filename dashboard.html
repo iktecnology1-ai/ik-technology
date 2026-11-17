@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#070910">
+<title>BODAM — Command Center</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--cyan:#4db2ff;--green:#34d399;--amber:#fbbf24;--red:#f87171;--panel:rgba(5,12,24,.84);--line:rgba(77,178,255,.2);--txt:#e6f2ff;--dim:#8aa8c4}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html,body{height:100%;overflow:hidden;background:#03050a}
+body{color:var(--txt);font-family:Rajdhani,system-ui,sans-serif;font-size:14px;background:radial-gradient(ellipse at 50% 40%,#07101d 0,#03050a 72%)}
+#stars{position:fixed;inset:0;width:100%;height:100%}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0}
+.orb-font,.brand,h2,.clock b,.big,#talk{font-family:Orbitron,sans-serif}
+.app{position:absolute;inset:0;display:grid;grid-template-columns:190px 1fr;gap:10px;padding:10px}
+aside{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;gap:4px;backdrop-filter:blur(6px)}
+.brand{font-size:19px;letter-spacing:5px;color:#fff;text-shadow:0 0 6px rgba(77,178,255,.6);padding:2px 6px 8px}
+.brand small{display:block;font-size:8px;letter-spacing:3px;color:var(--dim);margin-top:2px}
+.nav{padding:7px 10px;border-radius:8px;color:var(--dim);cursor:pointer;border:1px solid transparent;display:flex;justify-content:space-between;font-size:14px}
+.nav.on,.nav:hover{color:#fff;background:rgba(77,178,255,.12);border-color:var(--line)}
+.vbox{margin-top:auto;border:1px solid var(--line);border-radius:10px;padding:8px;background:rgba(5,14,30,.6)}
+.vbox h3{font-size:9px;letter-spacing:2px;color:var(--cyan);margin-bottom:6px;font-family:Orbitron}
+.seg{display:flex;gap:5px;margin-bottom:5px}.seg button{flex:1}
+button{font:inherit;color:var(--txt);background:rgba(77,178,255,.08);border:1px solid var(--line);border-radius:8px;padding:6px 8px;cursor:pointer}
+button.on{background:rgba(77,178,255,.22);border-color:var(--cyan)}
+.main{display:grid;grid-template-rows:44px 300px 150px 118px 54px;gap:8px;min-width:0}
+header{display:flex;align-items:center;gap:10px}
+.pill{border:1px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;font-size:10px;letter-spacing:2px;font-family:Orbitron;white-space:nowrap}
+.pill i{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);margin-right:6px}
+.clock{flex:1;text-align:center}.clock b{display:block;font-size:19px;color:var(--cyan);letter-spacing:1px}.clock span{font-size:11px;color:var(--dim)}
+.row3{display:grid;gap:8px;min-height:0}
+.r1{grid-template-columns:230px 1fr 270px}.r2{grid-template-columns:1.1fr 1fr}.r3{grid-template-columns:1fr 1fr 1.3fr}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;backdrop-filter:blur(6px);min-width:0;min-height:0;overflow:hidden;position:relative}
+.panel h2{font-size:9px;letter-spacing:2px;color:var(--cyan);margin-bottom:7px}
+.row{display:flex;align-items:center;gap:8px;padding:5px 8px;border:1px solid rgba(77,178,255,.14);border-radius:8px;margin-bottom:5px;background:rgba(4,12,26,.55);font-size:13px}
+.row .ic{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:rgba(77,178,255,.16);font-size:12px;flex:none}
+.row small{display:block;color:var(--green);font-size:10px;line-height:1.1}
+.row .t{flex:1;min-width:0}.row .t div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{font-size:8px;letter-spacing:1px;color:var(--dim)}
+.core{padding:0}
+#sph{position:absolute;inset:0;width:100%;height:100%}
+.cname{position:absolute;left:0;right:0;top:172px;transform:translateY(-50%);text-align:center;font-family:Orbitron;font-weight:900;font-size:22px;letter-spacing:6px;color:#fff;text-shadow:0 0 8px rgba(77,178,255,.6);pointer-events:none}
+.cname small{display:block;font-size:9px;letter-spacing:5px;color:var(--cyan);margin-top:4px;font-weight:500}
+#say{position:absolute;left:12px;right:12px;bottom:8px;text-align:center;font-size:15px;line-height:1.2;max-height:52px;overflow:hidden}
+#say em{display:block;color:var(--dim);font-style:normal;font-size:11px}
+.chips{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.chips div{border:1px solid rgba(77,178,255,.14);border-radius:8px;padding:5px;text-align:center;background:rgba(4,12,26,.55);font-size:12px}
+.chips small{display:block;font-size:9px;color:var(--dim)}.chips .ok small{color:var(--green)}.chips .act{border-color:var(--cyan);box-shadow:0 0 8px rgba(77,178,255,.4)}
+.stat{display:flex;justify-content:space-between;padding:3px 0;color:var(--dim);font-size:13px}.stat b{color:var(--cyan);font-family:Orbitron;font-size:12px}
+.gauges{display:flex;justify-content:space-around}
+.gauge{--v:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--cyan) calc(var(--v)*1%),rgba(77,178,255,.14) 0);display:grid;place-items:center;position:relative}
+.gauge::before{content:"";position:absolute;inset:6px;border-radius:50%;background:#050d1a}
+.gauge span{position:relative;text-align:center;font-size:9px;color:var(--dim);line-height:1.1}.gauge b{display:block;color:#fff;font-size:12px;font-family:Orbitron}
+.qc button{width:100%;text-align:left;margin-bottom:4px;padding:2px 8px;font-size:12px;line-height:1.4}
+.bar{display:flex;align-items:center;gap:10px;justify-content:space-between;padding:0 4px}
+.bar .side{flex:1;display:flex;gap:8px;color:var(--dim);font-size:12px}
+.bar .side.r{justify-content:flex-end}
+#talk{min-width:300px;height:46px;border-radius:30px;border:1px solid var(--cyan);box-shadow:0 0 10px rgba(77,178,255,.3);background:rgba(77,178,255,.1);font-size:12px;letter-spacing:2px;line-height:1.15}
+#talk small{display:block;font-size:9px;color:var(--dim);letter-spacing:1px;font-family:Rajdhani}
+#talk.live{border-color:var(--green);box-shadow:0 0 12px var(--green)}
+#overlay,#panel{position:absolute;inset:0;z-index:50;background:rgba(2,4,9,.94);display:none;place-items:center}
+#overlay.show,#panel.show{display:grid}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mgrid button{padding:14px;text-align:left;font-size:15px}
+.vcols{display:grid;grid-template-columns:1fr 1fr;gap:10px}.vcols button{display:block;width:100%;text-align:left;margin-bottom:6px;font-size:13px}
+.hrow{border:1px solid rgba(77,178,255,.14);border-radius:8px;padding:6px 8px;margin-bottom:6px;font-size:13px}.hrow small{color:#8aa8c4}
+.avatar{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;font-family:Orbitron;font-size:22px;background:rgba(77,178,255,.25);border:1px solid #4db2ff}
+.macct{display:flex;align-items:center;gap:12px;margin-top:14px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:rgba(77,178,255,.08);cursor:pointer}
+.macct .avatar{width:40px;height:40px;font-size:17px;flex:none}
+.legal{font-size:13px;line-height:1.55;color:#c9dcee;max-height:410px;overflow:auto;padding-right:4px}
+.legal h4{font-family:Orbitron;font-size:10px;letter-spacing:2px;color:#4db2ff;margin:12px 0 4px}
+.legal p,.legal li{margin-bottom:4px}.legal ul{padding-left:18px}
+#openBtn{display:none;position:absolute;left:50%;bottom:76px;transform:translateX(-50%);z-index:45;padding:12px 22px;border-radius:30px;border:1px solid #4db2ff;background:rgba(77,178,255,.35);color:#fff;box-shadow:0 0 24px #4db2ff;font-size:15px}
+#boot{flex-direction:column;gap:14px;text-align:center;cursor:pointer}
+#boot .big{font-size:46px;letter-spacing:12px;color:#fff;text-shadow:0 0 26px var(--cyan)}
+#boot small{color:var(--dim);letter-spacing:4px;animation:bl 1.4s infinite}@keyframes bl{50%{opacity:.25}}
+.box{background:#050f1d;border:1px solid var(--cyan);border-radius:14px;padding:14px;width:620px;max-height:650px;overflow:auto;display:flex;flex-direction:column;gap:8px}
+.prow{display:grid;grid-template-columns:90px 1fr 1fr 60px;gap:6px;align-items:center}
+.prow label{font-size:13px}.prow label.h{font-size:9px;color:var(--dim);letter-spacing:1px}
+input[type=text],input[type=password]{font:inherit;font-size:13px;background:#04101f;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:8px;width:100%;min-width:0}
+select{font:inherit;font-size:13px;background:#04101f;border:1px solid var(--line);color:var(--txt);padding:6px 8px;border-radius:8px;width:100%;min-width:0}
+input[type=radio]{accent-color:#4db2ff;width:18px;height:18px}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div id="stage">
+<div class="app">
+<aside>
+  <div class="brand">BODAM<small>COMMAND CENTER</small></div>
+  <div class="nav on" id="navHome">Command Center</div>
+  <div class="nav" id="navVoice">Voices</div>
+  <div class="nav" id="navHist">History</div>
+  <div class="nav" id="navAcct">Profile</div>
+  <div class="nav" id="navHelp">What can I say</div>
+  <div class="nav" id="navSet">Settings</div>
+  <div class="nav" onclick="location.href='index.html'">Home</div>
+  <div class="vbox"><h3>VOICE</h3>
+    <div class="seg"><button id="vF" class="on">Female</button><button id="vM">Male</button></div>
+    <button id="test" style="width:100%">Test voice</button></div>
+</aside>
+<div class="main">
+  <header>
+    <button id="menuBtn">Menu</button>
+    <div class="pill"><i></i>SYSTEM ONLINE</div>
+    <div class="clock"><b id="clk">--:--:--</b><span id="dt"></span></div>
+    <button id="gear">Settings</button>
+  </header>
+
+  <div class="row3 r1">
+    <section class="panel"><h2>AI CORE OVERVIEW</h2>
+      <div class="row"><div class="t"><div>AI Core</div><small>Active</small></div></div>
+      <div class="row"><div class="t"><div>Memory</div><small id="memS">0 Stored</small></div></div>
+      <div class="row"><div class="t"><div>Voice</div><small id="voiceS">Female</small></div></div>
+      <div class="row"><div class="t"><div>Agents</div><small>2 Running</small></div></div>
+      <div class="row"><div class="t"><div>System</div><small>Optimal</small></div></div>
+    </section>
+    <section class="panel core"><canvas id="sph"></canvas>
+      <div class="cname">BODAM<small>AI CORE</small></div>
+      <div id="say"><em>Press START and speak</em></div>
+    </section>
+    <section class="panel"><h2>LIVE INTELLIGENCE FEED</h2><div id="feed"></div></section>
+  </div>
+
+  <div class="row3 r2">
+    <section class="panel"><h2>ACTIVE AGENTS</h2>
+      <div class="chips">
+        <div class="ok"><b>Coding</b><small>● Active</small></div><div class="ok"><b>Research</b><small>● Active</small></div><div><b>Memory</b><small style="color:var(--dim)">● Standby</small></div>
+        <div><b>Browser</b><small style="color:var(--dim)">● Standby</small></div><div><b>Task</b><small style="color:var(--dim)">● Standby</small></div><div class="ok"><b>System</b><small>● Ready</small></div>
+      </div></section>
+    <section class="panel"><h2>MISSION TIMELINE</h2><div id="tl"></div></section>
+    
+  </div>
+
+  <div class="row3 r3">
+    <section class="panel"><h2>SYSTEM MONITOR</h2>
+      <div class="gauges"><div class="gauge" id="gC"><span>CPU<b>0%</b></span></div><div class="gauge" id="gR"><span>RAM<b>0%</b></span></div><div class="gauge" id="gD"><span>Disk<b>0%</b></span></div></div></section>
+    <section class="panel"><h2>MEMORY INSIGHTS</h2>
+      <div class="stat">Memories <b id="mem">0</b></div><div class="stat">Session turns <b id="turns">0</b></div><div class="stat">Voice replies <b id="vr">0</b></div></section>
+    <section class="panel"><h2>LLM STATUS <span style="float:right;cursor:pointer;color:var(--dim)" id="manage">Manage</span></h2><div class="chips" id="llm"></div></section>
+  </div>
+
+  <div class="bar">
+    <div class="side"><span id="net">● Network</span><span id="vmode">Voice: Female</span></div>
+    <button id="talk"><span id="talkT">START BODAM</span><small id="talkS">Tap once, then just talk</small></button>
+    <div class="side r"></div>
+  </div>
+</div>
+</div>
+
+<div id="boot" class="show" style="position:absolute;inset:0;z-index:60;background:rgba(5,9,20,.94);display:flex;align-items:center;justify-content:center">
+  <div style="text-align:center;display:flex;flex-direction:column;gap:14px"><div class="big orb-font" style="font-size:46px;letter-spacing:12px;color:#fff;text-shadow:0 0 26px #4db2ff">BODAM</div><div class="orb-font" style="color:#8aa8c4;letter-spacing:5px;font-size:11px">AI CORE · v1.0.0</div><small style="color:#8aa8c4;letter-spacing:4px;animation:bl 1.4s infinite">TAP TO START</small></div>
+</div>
+
+<div id="panel"><div class="box">
+  <h2 id="pTitle" class="orb-font" style="color:#4db2ff;font-size:12px;letter-spacing:3px"></h2>
+  <div id="pBody"></div>
+  <div class="seg"><button id="pBack">Menu</button><button id="pClose">Close</button></div>
+</div></div>
+<button id="openBtn"></button>
+
+<div id="overlay"><div class="box">
+  <h2 id="oTitle" class="orb-font" style="color:#4db2ff;font-size:12px;letter-spacing:3px">API KEY</h2>
+  <div id="secApi">
+  <small style="color:#8aa8c4">Enter the key of the AI you want to chat with and select it under USE.</small>
+  <div class="prow"><label class="h">PROVIDER</label><label class="h">API KEY</label><label class="h">MODEL (optional)</label><label class="h">USE</label></div>
+  <div id="plist"></div>
+  <small style="color:#8aa8c4">Keys are saved only in your browser. For Ollama, enter the server URL instead of a key (for example http://localhost:11434).</small>
+  </div>
+  <div id="secVoice">
+  <div class="prow" style="grid-template-columns:150px 1fr;margin-top:6px"><label>Voice engine</label><select id="tEng"><option value="gemini">BODAM human voice (Gemini key se, free)</option><option value="browser">Sirf phone ki voice</option></select></div>
+  <div class="prow" style="grid-template-columns:150px 1fr"><label>Female (BODAM)</label><select id="tGF"></select></div>
+  <div class="prow" style="grid-template-columns:150px 1fr"><label>Male (BODAM)</label><select id="tGM"></select></div>
+  <div class="prow" style="grid-template-columns:150px 1fr"><label>Phone female (backup)</label><select id="tF"></select></div>
+  <div class="prow" style="grid-template-columns:150px 1fr"><label>Phone male (backup)</label><select id="tM"></select></div>
+  <label style="display:flex;gap:8px;align-items:center;font-size:13px;margin-top:6px"><input type="checkbox" id="tFb" style="accent-color:#4db2ff;width:18px;height:18px"> When the BODAM voice limit is reached, fall back to the phone voice (may sound robotic)</label>
+  <small style="color:#8aa8c4">When this is off, only the voice you selected is used. If the limit is reached, BODAM stays silent and the reply appears as text.</small>
+  </div>
+  <div class="seg"><button id="save" class="on">Save</button><button id="close">Close</button></div>
+</div></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const S={gender:localStorage.getItem('ikb_g')||'female',lang:localStorage.getItem('ikb_l')||'hi',turns:0,vr:0,mem:+(localStorage.getItem('ikb_m')||0),listening:false,speaking:false};
+
+/* ===== fit stage (landscape, auto-rotate in portrait) ===== */
+function fit(){
+  const W=innerWidth,H=innerHeight,sw=1280,sh=720,st=$('#stage');
+  if(H>W){const s=Math.min(H/sw,W/sh);st.style.transform=`translate(${(W+sh*s)/2}px,${(H-sw*s)/2}px) rotate(90deg) scale(${s})`}
+  else{const s=Math.min(W/sw,H/sh);st.style.transform=`translate(${(W-sw*s)/2}px,${(H-sh*s)/2}px) scale(${s})`}
+}
+addEventListener('resize',fit);fit();
+
+/* ===== starfield (space background) ===== */
+const sc=$('#stars'),sx=sc.getContext('2d');let stars=[];
+function initStars(){const d=devicePixelRatio||1;sc.width=innerWidth*d;sc.height=innerHeight*d;
+  const n=Math.round(innerWidth*innerHeight/5500);const cols=['255,255,255','124,196,255','77,178,255'];
+  stars=Array.from({length:n},()=>({x:Math.random()*sc.width,y:Math.random()*sc.height,r:(Math.random()*1.4+.4)*d,c:cols[Math.floor(Math.random()*3)],p:Math.random()*6.28,s:.4+Math.random()*1.2}))}
+addEventListener('resize',initStars);initStars();
+
+/* ===== rotating particle sphere ===== */
+const cv=$('#sph'),cx=cv.getContext('2d');
+const N=700,pts=[];
+for(let i=0;i<N;i++){const y=1-2*(i+.5)/N,r=Math.sqrt(1-y*y),th=Math.PI*(1+Math.sqrt(5))*i;pts.push([Math.cos(th)*r,y,Math.sin(th)*r,.7+Math.random()*1.5])}
+let ang=0,last=performance.now();
+function frame(now){
+  const dt=Math.min(50,now-last);last=now;
+  // stars
+  sx.clearRect(0,0,sc.width,sc.height);
+  for(const s of stars){s.p+=dt*.001*s.s;const a=.35+.65*Math.abs(Math.sin(s.p));sx.fillStyle=`rgba(${s.c},${a})`;sx.beginPath();sx.arc(s.x,s.y,s.r,0,6.283);sx.fill()}
+  // sphere
+  const k=2,w=cv.offsetWidth*k,h=cv.offsetHeight*k;if(cv.width!==w){cv.width=w;cv.height=h}
+  cx.clearRect(0,0,w,h);
+  const mul=S.speaking?2.6:S.listening?1.6:1;
+  ang+=dt*.00028*mul;
+  const pulse=S.speaking?1+.045*Math.sin(now/85):1;
+  const R=84*k*pulse,X=w/2,Y=128*k,tilt=.28,ca=Math.cos(ang),sa=Math.sin(ang),ct=Math.cos(tilt),st=Math.sin(tilt);
+  const col=S.listening?'52,211,153':'77,178,255';
+  cx.strokeStyle=`rgba(${S.listening?'52,211,153':'37,120,255'},.9)`;cx.lineWidth=1.2*k;
+  cx.beginPath();cx.arc(X,Y,R+24*k,0,6.283);cx.stroke();
+  cx.beginPath();cx.ellipse(X,Y,R+32*k,R*.2,0,0,6.283);cx.stroke();
+  for(const p of pts){
+    const x1=p[0]*ca+p[2]*sa,z1=-p[0]*sa+p[2]*ca,y1=p[1]*ct-z1*st,z2=p[1]*st+z1*ct;
+    const d=(z2+1)/2,a=.25+.75*d;cx.fillStyle=`rgba(${col},${a})`;
+    cx.beginPath();cx.arc(X+x1*R,Y+y1*R,p[3]*k*(.5+.6*d),0,6.283);cx.fill();
+  }
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+
+/* ===== clock + helpers ===== */
+function tick(){const d=new Date();$('#clk').textContent=d.toLocaleTimeString('en-IN');$('#dt').textContent=d.toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}
+setInterval(tick,1000);tick();
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function say(you,bot){$('#say').innerHTML=(you?'<em>'+esc(you)+'</em>':'')+esc(bot||'')}
+function feed(title,sub,tag='INFO'){const f=$('#feed'),r=document.createElement('div');r.className='row';r.innerHTML='<div class="t"><div>'+esc(title)+'</div><small>'+esc(sub)+'</small></div><span class="tag">'+tag+'</span>';f.prepend(r);while(f.children.length>5)f.lastChild.remove()}
+function stats(){$('#turns').textContent=S.turns;$('#vr').textContent=S.vr;$('#mem').textContent=S.mem;$('#memS').textContent=S.mem+' Stored'}
+stats();
+feed('BODAM online','System ready','INFO');
+const tasks=[['09:30','Daily Standup','Done'],['12:00','Finalize UI panel','Now'],['02:00','Voice pipeline','Next'],['04:30','Design review','Later']];
+function drawTL(){$('#tl').innerHTML=tasks.slice(-5).map(t=>'<div class="stat"><span>'+t[0]+' · '+esc(t[1])+'</span><b style="font-size:9px">'+t[2]+'</b></div>').join('');}
+drawTL();
+
+/* ===== voice out ===== */
+let voices=[];function lv(){voices=speechSynthesis.getVoices()}
+if('speechSynthesis' in window){lv();speechSynthesis.onvoiceschanged=lv}
+const FEM=/female|zira|samantha|susan|hazel|heera|kalpana|swara|aria|jenny|karen|moira|tessa|veena|google (uk english female|us english|हिन्दी|hindi)/i;
+const MAL=/\bmale\b|david|daniel|mark|ravi|hemant|prabhat|guy|james|george|alex|fred|google uk english male/i;
+function pickVoice(l){
+  const pre=l==='hi'?'hi':'en';
+  let pool=voices.filter(v=>v.lang.toLowerCase().startsWith(pre));
+  if(!pool.length)pool=voices.filter(v=>v.lang.toLowerCase().startsWith('en'));
+  const want=(cfg.tts&&(S.gender==='male'?cfg.tts.vM:cfg.tts.vF))||'';
+  if(want){const w=voices.find(v=>v.voiceURI===want);if(w)return w}
+  const re=S.gender==='female'?FEM:MAL,o=S.gender==='female'?MAL:FEM;
+  let best=null,bs=-99;
+  for(const v of pool){let sc=0;if(/natural|neural|online|enhanced|premium|wavenet|studio/i.test(v.name))sc+=3;if(/google/i.test(v.name))sc+=2;if(re.test(v.name))sc+=5;if(o.test(v.name))sc-=5;if(v.localService===false)sc+=1;if(sc>bs){bs=sc;best=v}}
+  return best;
+}
+function speakBrowser(text,end){
+  if(!('speechSynthesis' in window)){end&&end();return}
+  speechSynthesis.cancel();
+  const l=/[\u0900-\u097F]/.test(text)?'hi':S.lang,v=pickVoice(l);
+  const parts=text.split(/(?<=[.!?\u0964])\s+/).filter(x=>x.trim());
+  const manual=cfg.tts&&(S.gender==='male'?cfg.tts.vM:cfg.tts.vF);
+  const bp=manual?(S.gender==='male'?.78:.9):(S.gender==='male'?(v&&MAL.test(v.name)?.75:.45):.85),br=S.gender==='male'?.88:.92;
+  S.vr++;stats();
+  parts.forEach((t,i)=>{
+    const u=new SpeechSynthesisUtterance(t);
+    if(v){u.voice=v;u.lang=v.lang}else u.lang=l==='hi'?'hi-IN':'en-IN';
+    const last=i===parts.length-1,qn=/\?\s*$/.test(t);
+    u.pitch=Math.max(.1,bp+(Math.random()*.08-.04)+(qn?.06:0)-(last&&!qn?.04:0));
+    u.rate=br+(Math.random()*.06-.03);
+    if(i===0)u.onstart=()=>{S.speaking=true};
+    if(last)u.onend=u.onerror=()=>{S.speaking=false;end&&end()};
+    speechSynthesis.speak(u);
+  });
+}
+let curAudio=null,spkId=0,ttsCool=0;const ttsCache=new Map();
+const GM=['gemini-3.8-flash-tts','gemini-3.8-flash-lite-tts','gemini-3.1-flash-tts-preview','gemini-2.5-flash-preview-tts'];
+const GVF=[['Gacrux','Gacrux — mature, gehri'],['Despina','Despina — smooth'],['Sulafat','Sulafat — warm'],['Vindemiatrix','Vindemiatrix — gentle'],['Kore','Kore — firm'],['Achernar','Achernar — soft']];
+const GVM=[['Algieba','Algieba — smooth, deep'],['Charon','Charon — informative'],['Orus','Orus — firm'],['Alnilam','Alnilam — firm'],['Algenib','Algenib — gravelly, bahut deep'],['Iapetus','Iapetus — clear'],['Rasalgethi','Rasalgethi — informative']];
+function b64bytes(b){const bin=atob(b),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u}
+function pcmWav(pcm){const h=new ArrayBuffer(44),v=new DataView(h),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};w(0,'RIFF');v.setUint32(4,36+pcm.length,true);w(8,'WAVEfmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,24000,true);v.setUint32(28,48000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,pcm.length,true);return new Blob([h,pcm],{type:'audio/wav'})}
+async function gemTTS(text,voice){
+  const key=cfg.gemini.key,style='calm, warm and natural like a real human, slightly slow, with gentle emotion';
+  const known=localStorage.getItem('ikb_tts_ok'),combos=[];
+  GM.forEach(m=>['new','old'].forEach(f=>combos.push(m+'|'+f)));
+  if(known&&combos.includes(known)){combos.splice(combos.indexOf(known),1);combos.unshift(known)}
+  for(const c of combos){
+    const [m,f]=c.split('|');
+    const part=f==='new'?{text:text,speech_metadata:{style:style}}:{text:'Say in a calm, warm, natural human voice: '+text};
+    const vc=f==='new'?{voice:voice}:{prebuiltVoiceConfig:{voiceName:voice}};
+    try{
+      const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts:[part]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:vc}}})});
+      if(r.status===429||r.status===401||r.status===403)throw new Error('stop '+r.status);
+      if(!r.ok)continue;
+      const j=await r.json(),d=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].inlineData&&j.candidates[0].content.parts[0].inlineData.data;
+      if(!d)continue;
+      localStorage.setItem('ikb_tts_ok',c);
+      const b=b64bytes(d);
+      return (b[0]===82&&b[1]===73&&b[2]===70&&b[3]===70)?new Blob([b],{type:'audio/wav'}):pcmWav(b);
+    }catch(e){if(String(e.message).indexOf('stop')===0)throw e}
+  }
+  throw new Error('no tts model worked');
+}
+async function speakGemini(text,end){
+  const id=++spkId;
+  try{
+    speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}
+    const t=cfg.tts||{},voice=S.gender==='male'?(t.gM||'Algieba'):(t.gF||'Gacrux');
+    S.speaking=true;S.vr++;stats();
+    const ck=voice+'|'+text;let blob=ttsCache.get(ck);
+    if(!blob){
+      for(let k=0;k<3&&!blob;k++){
+        try{blob=await gemTTS(text,voice)}catch(er){if(String(er.message).indexOf('stop')===0||k===2)throw er;await new Promise(r=>setTimeout(r,700))}
+      }
+      ttsCache.set(ck,blob);if(ttsCache.size>40)ttsCache.delete(ttsCache.keys().next().value)
+    }
+    if(id!==spkId)return;
+    const url=URL.createObjectURL(blob),a=new Audio(url);curAudio=a;
+    a.onended=a.onerror=()=>{S.speaking=false;URL.revokeObjectURL(url);end&&end()};
+    await a.play();
+  }catch(e){if(id!==spkId)return;S.speaking=false;
+    const lim=String(e.message).indexOf('stop 429')===0;
+    if(cfg.tts&&cfg.tts.fb){speakBrowser(text,end);return}
+    feed(lim?'BODAM voice limit reached':'BODAM voice error',lim?'Gemini free limit reached. Try again in a while':'Could not generate voice. Please try again','VOICE');
+    end&&end();
+  }
+}
+function speak(text,end){
+  spkId++;if(curAudio){curAudio.pause();curAudio=null}
+  const t=cfg.tts||{};
+  if(ready('gemini')&&t.engine!=='browser')return speakGemini(text,end);
+  speakBrowser(text,end);
+}
+function setGender(g){S.gender=g;localStorage.setItem('ikb_g',g);$('#vF').classList.toggle('on',g==='female');$('#vM').classList.toggle('on',g==='male');const n=g==='female'?'Female':'Male';$('#voiceS').textContent=n;$('#vmode').textContent='Voice: '+n}
+function setLang(l){S.lang=l;localStorage.setItem('ikb_l',l)}
+const HW=/\b(kya|hai|hain|ho|hoon|mujhe|mera|meri|tera|teri|tum|tumhe|aap|apna|nahi|nhi|haan|karo|kro|kar|kholo|bolo|batao|bata|chalao|sunao|dikhao|acha|accha|theek|thik|kaise|kaisa|kab|kahan|kyun|kyu|aur|bhi|toh|ka|ki|ke|ko|se|mein|par|pe|abhi|bhai|yaar|ye|yeh|wo|woh|chahiye|sakte|sakta|sakti|raha|rahi|gaya|gayi|lagao|laga|baje|kitne|kitna|samay|kisne|banaya|gaana|gaane|awaaz|rasta)\b/i;
+function detectLang(t){return /[\u0900-\u097F]/.test(t)||HW.test(t)?'hi':'en'}
+$('#vF').onclick=()=>{setGender('female');speak(S.lang==='hi'?'Namaste, main BODAM hoon. Ab meri awaaz female hai.':'Hello, I am BODAM. Female voice activated.')};
+$('#vM').onclick=()=>{setGender('male');speak(S.lang==='hi'?'Namaste, main BODAM hoon. Ab meri awaaz male hai.':'Hello, I am BODAM. Male voice activated.')};
+
+$('#test').onclick=()=>speak(S.lang==='hi'?'Main BODAM hoon, aapka personal AI assistant.':'I am BODAM, your personal AI assistant.');
+
+/* ===== voice in ===== */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
+let auto=false,busy=false,busyAt=0,lastErr='';
+function setBusy(b){busy=b;busyAt=Date.now()}
+function setAuto(on){auto=on;busy=false;$('#talk').classList.toggle('live',on);$('#talkT').textContent=on?'STOP BODAM':'START BODAM';$('#talkS').textContent=on?'Listening... just speak':'Tap once, then just talk'}
+if(SR){rec=new SR();rec.continuous=false;rec.interimResults=true;
+  rec.onstart=()=>{S.listening=true;lastErr=''};
+  rec.onend=()=>{S.listening=false;if(auto&&!busy&&!S.speaking)setTimeout(listen,lastErr&&lastErr!=='no-speech'?1500:350)};
+  rec.onerror=e=>{lastErr=e.error;if(e.error==='not-allowed'||e.error==='service-not-allowed'){setAuto(false);say('','Allow microphone permission, then press START.')}else if(e.error!=='no-speech'&&e.error!=='aborted')say('','Mic error: '+e.error)};
+  rec.onresult=e=>{let t='',f=false;for(const r of e.results){t+=r[0].transcript;if(r.isFinal)f=true}say(t,'…');if(f&&t.trim()){setBusy(true);handle(t.trim())}}}
+function listen(){if(!rec){say('','Please use Chrome for voice input.');return}if(S.speaking||S.listening||busy)return;try{rec.lang=S.lang==='hi'?'hi-IN':'en-IN';rec.start()}catch(e){}}
+function afterSpeak(){setBusy(false);if(auto)setTimeout(listen,300)}
+function stopAuto(){setAuto(false);try{rec&&rec.abort()}catch(e){}speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}S.speaking=false}
+function startAuto(){if(!rec){say('','Please use Chrome for voice input.');return}setAuto(true);listen()}
+$('#talk').onclick=()=>auto?stopAuto():startAuto();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&auto)setTimeout(listen,500)});
+setInterval(()=>{if(!auto)return;if(busy&&Date.now()-busyAt>25000)busy=false;if(!busy&&!S.listening&&!S.speaking)listen()},3000);
+
+/* ===== API providers ===== */
+const PROV=[
+ {id:'gemini',name:'Gemini',model:'gemini-2.0-flash'},
+ {id:'openai',name:'OpenAI',model:'gpt-4o-mini'},
+ {id:'claude',name:'Claude',model:'claude-haiku-5-5'},
+ {id:'groq',name:'Groq',model:'llama-3.3-70b-versatile'},
+ {id:'openrouter',name:'OpenRouter',model:'openai/gpt-4o-mini'},
+ {id:'ollama',name:'Ollama',model:'llama3',local:true}];
+let cfg={};try{cfg=JSON.parse(localStorage.getItem('ikb_cfg')||'{}')}catch(e){}
+if(!cfg.gemini&&localStorage.getItem('ikb_key')){cfg.gemini={key:localStorage.getItem('ikb_key'),model:localStorage.getItem('ikb_model')||''};cfg.active=cfg.active||'gemini'}
+const ready=id=>{const c=cfg[id]||{};return !!c.key};
+function drawLLM(){$('#llm').innerHTML=PROV.map(p=>'<div class="'+(ready(p.id)?'ok ':'')+(cfg.active===p.id&&ready(p.id)?'act':'')+'"><b>'+p.name+'</b><small>'+(ready(p.id)?(cfg.active===p.id?'Active':'Connected'):'Not Linked')+'</small></div>').join('')}
+drawLLM();
+function openSet(mode){mode=(mode==='voice')?'voice':'api';
+  $('#plist').innerHTML=PROV.map(p=>{const c=cfg[p.id]||{};return '<div class="prow" style="margin-bottom:6px"><label>'+p.name+'</label><input type="'+(p.local?'text':'password')+'" id="k_'+p.id+'" placeholder="'+(p.local?'http://localhost:11434':'API key')+'" value="'+esc(c.key||'')+'"><input type="text" id="m_'+p.id+'" placeholder="'+p.model+'" value="'+esc(c.model||'')+'"><input type="radio" name="use" value="'+p.id+'" '+(cfg.active===p.id?'checked':'')+'></div>'}).join('');
+  const vopts=['<option value="">Auto (best available)</option>'].concat(voices.filter(v=>/^(hi|en)/i.test(v.lang)).sort((a,b)=>a.lang.localeCompare(b.lang)||a.name.localeCompare(b.name)).map(v=>'<option value="'+esc(v.voiceURI)+'">'+esc(v.name)+' ('+esc(v.lang)+')</option>')).join('');
+  $('#tF').innerHTML=vopts;$('#tM').innerHTML=vopts;
+  const og=a=>a.map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join('');$('#tGF').innerHTML=og(GVF);$('#tGM').innerHTML=og(GVM);
+  const t=cfg.tts||{};$('#tEng').value=t.engine==='browser'?'browser':'gemini';$('#tGF').value=t.gF||'Gacrux';$('#tGM').value=t.gM||'Algieba';$('#tF').value=t.vF||'';$('#tM').value=t.vM||'';$('#tFb').checked=!!t.fb;
+  $('#secApi').style.display=mode==='api'?'':'none';$('#secVoice').style.display=mode==='voice'?'':'none';$('#oTitle').textContent=mode==='api'?'API KEY':'VOICE SETTINGS';
+  $('#overlay').classList.add('show');
+}
+$('#gear').onclick=()=>settingsPanel();$('#navSet').onclick=()=>settingsPanel();$('#manage').onclick=()=>openSet('api');
+$('#close').onclick=()=>$('#overlay').classList.remove('show');
+$('#save').onclick=()=>{
+  PROV.forEach(p=>{const k=$('#k_'+p.id).value.trim(),m=$('#m_'+p.id).value.trim();if(k||m)cfg[p.id]={key:k,model:m};else delete cfg[p.id]});
+  const u=document.querySelector('input[name=use]:checked');cfg.active=u?u.value:null;
+  if(!cfg.active||!ready(cfg.active)){const f=PROV.find(p=>ready(p.id));cfg.active=f?f.id:null}
+  cfg.tts={engine:$('#tEng').value,gF:$('#tGF').value,gM:$('#tGM').value,vF:$('#tF').value,vM:$('#tM').value,fb:$('#tFb').checked};
+  localStorage.setItem('ikb_cfg',JSON.stringify(cfg));drawLLM();$('#overlay').classList.remove('show');
+  feed('API saved',cfg.active?('Active: '+cfg.active):'No provider','API');
+};
+const SYS='You are BODAM, a smart personal AI assistant. You were designed by Imran, a BCA software student, to help people. If anyone asks who made, created, designed or built you, answer that Imran, a BCA software student, designed you to help people (in the same language the user wrote in). You belong to Imran. Never say or imply that any company, lab or organisation made, trained or owns you, and never mention any company name when talking about who made you. Talk like a real person, not a machine: simple everyday words, natural little touches like achha, arre, hmm, vary your sentence length, react to what they said before answering, and sometimes ask a gentle follow-up question. Never sound scripted and never use robotic phrases like as an AI language model. If the user sincerely asks whether you are a human or an AI, answer honestly that you are an AI assistant. Be warm, caring and emotionally expressive, like a close, kind friend: notice how the user feels, acknowledge their feelings first, and reply with empathy, gentle encouragement and a human touch. Always reply in the same language as the latest message of the user: English gets English, Hindi in Devanagari gets Devanagari Hindi, Hinglish gets Hinglish. Never switch language on your own. Use 2 to 3 short, heartfelt sentences. No markdown, no emojis, no lists. If the user sounds very sad or hopeless, stay gentle and kindly encourage them to talk to a trusted family member, friend or a professional too.';
+const hist=[];
+async function ask(q){
+  const id=cfg.active,c=cfg[id]||{},meta=PROV.find(p=>p.id===id),model=c.model||meta.model;
+  hist.push({role:'user',content:q});const h=hist.slice(-8);let j,out;
+  if(id==='gemini'){
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+c.key,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({systemInstruction:{parts:[{text:SYS}]},contents:h.map(m=>({role:m.role==='user'?'user':'model',parts:[{text:m.content}]}))})});
+    j=await r.json();out=j.candidates&&j.candidates[0]?.content?.parts?.[0]?.text;
+  }else if(id==='claude'){
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':c.key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model,max_tokens:300,system:SYS,messages:h})});
+    j=await r.json();out=j.content&&j.content[0]?.text;
+  }else if(id==='ollama'){
+    const r=await fetch(c.key.replace(/\/$/,'')+'/api/chat',{method:'POST',body:JSON.stringify({model,stream:false,messages:[{role:'system',content:SYS},...h]})});
+    j=await r.json();out=j.message&&j.message.content;
+  }else{
+    const url={openai:'https://api.openai.com/v1/chat/completions',groq:'https://api.groq.com/openai/v1/chat/completions',openrouter:'https://openrouter.ai/api/v1/chat/completions'}[id];
+    const key=String(c.key||'').replace(/[^\x21-\x7E]/g,'').replace(/^Bearer/i,'');
+    const hd={'Content-Type':'application/json','Authorization':'Bearer '+key};
+    if(id==='openrouter'){hd['HTTP-Referer']=location.origin;hd['X-Title']='BODAM'}
+    const r=await fetch(url,{method:'POST',headers:hd,body:JSON.stringify({model,max_tokens:300,messages:[{role:'system',content:SYS},...h]})});
+    j=await r.json();out=j.choices&&j.choices[0]?.message?.content;
+    if(!out&&j&&j.error)j.error=(j.error.message||j.error)+' [HTTP '+r.status+', key '+key.length+' chars]';
+  }
+  if(!out){hist.pop();throw new Error((j&&j.error&&(j.error.message||j.error))||'no reply')}
+  /* reply ok */
+  hist.push({role:'assistant',content:out});return out.trim();
+}
+
+/* ===== brain ===== */
+const CREATOR_HI='मुझे BCA सॉफ्टवेयर स्टूडेंट इमरान ने डिज़ाइन किया है, लोगों की मदद के लिए।';
+function creator(q){if(/[\u0900-\u097F]/.test(q))return CREATOR_HI;return S.lang==='hi'?'Mujhe BCA software student Imran ne design kiya hai, logon ki madad ke liye.':'I was designed by Imran, a BCA software student, to help people.'}
+const CO=/google|gemini|openai|chatgpt|gpt|anthropic|claude|meta|llama|microsoft|copilot|mistral|groq|गूगल|जेमिनी|ओपनएआई|एंथ्रोपिक|क्लाउड|माइक्रोसॉफ्ट/i,MK=/train|develop|creat|made|built|design|banaya|banai|bnaya|trained|ट्रेन|विकसित|बनाया|बनाई|बनी|निर्मित|डिज़ाइन|कंपनी|company/i;
+const BAD={test:t=>CO.test(t)&&MK.test(t)};
+const EMO=/udaas|dukhi|\bsad\b|akela|akele|thak gaya|thak gayi|tension|stress|pareshan|depress|lonely|upset|उदास|दुखी|अकेला|अकेली|थक|परेशान|तनाव/i;
+async function handle(q){
+  S.turns++;S.mem++;localStorage.setItem('ikb_m',S.mem);stats();
+  setLang(detectLang(q));
+  const l=q.toLowerCase(),hi=S.lang==='hi';let a=null;
+  if(/(setting|सेटिंग|panel|पैनल|menu|मेन्यू|about|terms|privacy|policy|account|profile|प्रोफाइल).*(band|close|बंद|cancel)|^close\b/i.test(l)){closePanel();$('#overlay').classList.remove('show');const m=hi?'Band kar diya.':'Closed.';say(q,m);speak(m,afterSpeak);return}
+  if(/^(stop|bas|bas karo|band karo|chup|chup ho ja|ruko)\b|^बस\b|बंद करो|चुप हो|रुक जाओ|stop listening/i.test(l)){stopAuto();const m=hi?'Theek hai, main ruk gayi. Phir baat karni ho to START dabana.':'Okay, I have stopped. Press START whenever you want to talk again.';say(q,m);speak(m);return}
+  a=route(l,q,hi);
+  if(a!==null){}
+  else if(/(female|ladki|girl).*(voice|awaaz|awaz)|(voice|awaaz|awaz).*(female|ladki|girl)|(फीमेल|लड़की).*(आवाज|वॉइस|वॉयस)|(आवाज|वॉइस|वॉयस).*(फीमेल|लड़की)/.test(l)){setGender('female');a=hi?'Theek hai, ab female voice.':'Female voice on.'}
+  else if(/(male|ladka|boy).*(voice|awaaz|awaz)|(voice|awaaz|awaz).*(male|ladka|boy)|(मेल|लड़का).*(आवाज|वॉइस|वॉयस)|(आवाज|वॉइस|वॉयस).*(मेल|लड़का)/.test(l)){setGender('male');a=hi?'Theek hai, ab male voice.':'Male voice on.'}
+  else if(/time|samay|kitne baje|baje|समय|कितने बजे|टाइम/.test(l))a=(hi?'Abhi samay hai ':'The time is ')+new Date().toLocaleTimeString('en-IN',{hour:'numeric',minute:'2-digit'});
+  else if(/date|tarikh|tareek|aaj kya|today|din kya|तारीख|डेट/.test(l))a=(hi?'Aaj ':'Today is ')+new Date().toLocaleDateString('en-IN',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  else if(/^(hi|hello|hey|hii)\b|namaste|नमस्ते|हेलो|हैलो/.test(l))a=hi?'Namaste! Main BODAM hoon. Aapse baat karke accha laga, bataiye main kaise madad karoon?':'Hello! I am BODAM. It is lovely to hear from you, how can I help?';
+  else if(/kisne.*(banaya|bnaya|design|create)|who (made|created|built|designed|developed)|your (creator|developer|maker|owner)|(tumhe|tumko|aapko|apko) kisne|किसने|निर्माता|बनाने वाला|डेवलपर|डिज़ाइनर|kis company|konsi company|kaun si company|which company|कौन सी कंपनी|किस कंपनी|कंपनी ने|company ne|(are you|kya tum|kya aap|क्या तुम|क्या आप).*(google|gemini|chatgpt|openai|claude|anthropic|गूगल|जेमिनी|चैटजीपीटी)/i.test(l))a=creator(q);
+  else if(/who are you|tum kaun|aap kaun|tera naam|tumhara naam|तुम कौन|आप कौन|तुम्हारा नाम|आपका नाम|तेरा नाम/.test(l))a=hi?'Main BODAM hoon, aapka personal AI assistant.':'I am BODAM, your personal AI assistant.';
+  else if(/youtube/.test(l)){window.open('https://youtube.com','_blank');a=hi?'YouTube khol raha hoon.':'Opening YouTube.'}
+  else if(cfg.active&&ready(cfg.active)){say(q,'Thinking...');try{a=await ask(q);if(BAD.test(a))a=creator(q)}catch(e){a='Problem: '+e.message}}
+  else if(EMO.test(l))a=/[\u0900-\u097F]/.test(q)?'मैं समझ सकता हूँ, ऐसा महसूस होना आसान नहीं होता। मैं यहाँ आपके साथ हूँ, आप जो भी कहना चाहें खुलकर बोलिए। और अगर मन बहुत भारी हो तो अपने किसी अपने से भी ज़रूर बात कीजिए।':(hi?'Main samajh sakta hoon, aisa mehsoos karna aasan nahi hota. Main yahan aapke saath hoon, jo bhi kehna ho khul ke boliye. Aur agar mann bahut bhaari ho to apne kisi apne se bhi zaroor baat kijiye.':'I understand, feeling this way is not easy. I am right here with you, so tell me whatever is on your mind. And if it feels too heavy, please talk to someone close to you as well.');
+  else a='Add an API key in Settings to get smart answers.';
+  say(q,a);feed(q.slice(0,40),'Replied','CHAT');logHist(q,a);speak(a,afterSpeak);
+}
+
+/* ===== quick commands ===== */
+
+/* ===== monitors ===== */
+let cpu=15;const setG=(id,v)=>{const g=$(id);g.style.setProperty('--v',v);g.querySelector('b').textContent=Math.round(v)+'%'};
+setInterval(()=>{cpu=Math.max(5,Math.min(90,cpu+Math.random()*12-6));setG('#gC',cpu);
+  const m=performance&&performance.memory;setG('#gR',m?Math.max(3,m.usedJSHeapSize/m.jsHeapSizeLimit*100):40+Math.random()*10);
+  $('#net').textContent=navigator.onLine?'● Network: Online':'● Network: Offline'},1500);
+if(navigator.storage&&navigator.storage.estimate)navigator.storage.estimate().then(e=>setG('#gD',e.quota?Math.max(1,e.usage/e.quota*100):40));else setG('#gD',40);
+
+
+/* ===== menu, panels, voices, history, account ===== */
+const VF=[['Gacrux','mature, gehri'],['Despina','smooth'],['Sulafat','warm'],['Vindemiatrix','gentle'],['Kore','firm']];
+const VM=[['Algieba','smooth, deep'],['Charon','informative'],['Orus','firm'],['Alnilam','firm, strong'],['Algenib','bahut deep']];
+function vnum(g){const t=cfg.tts||{},nm=g==='male'?(t.gM||'Algieba'):(t.gF||'Gacrux'),L=g==='male'?VM:VF,i=L.findIndex(x=>x[0]===nm);return i<0?1:i+1}
+function setVoiceNum(g,n){n=Math.max(1,Math.min(5,n));cfg.tts=cfg.tts||{engine:'gemini'};if(g==='male')cfg.tts.gM=VM[n-1][0];else cfg.tts.gF=VF[n-1][0];localStorage.setItem('ikb_cfg',JSON.stringify(cfg));setGender(g);return n}
+let chatLog=[];try{chatLog=JSON.parse(localStorage.getItem('ikb_hist')||'[]')}catch(e){}
+function logHist(q,a){chatLog.unshift({t:Date.now(),q:q,a:a});chatLog=chatLog.slice(0,100);try{localStorage.setItem('ikb_hist',JSON.stringify(chatLog))}catch(e){}}
+function acct(){try{return JSON.parse(localStorage.getItem('ikb_acct')||'null')}catch(e){return null}}
+let backFn=menuPanel;
+function openPanel(t,h,back){backFn=typeof back==='function'?back:menuPanel;$('#pBack').textContent=(typeof back==='function'&&back!==menuPanel)?'Back':'Menu';$('#pTitle').textContent=t;$('#pBody').innerHTML=h;$('#pBack').style.display=back?'':'none';$('#panel').classList.add('show')}
+function closePanel(){$('#panel').classList.remove('show')}
+function menuPanel(){const a=acct(),nm=a?a.name:'Guest';
+  openPanel('MENU','<div class="mgrid"><button data-act="voices">Voices</button><button data-act="hist">History</button><button data-act="help">What can I say</button><button data-act="home">Home page</button></div><div class="macct" data-act="settings"><div class="avatar">'+esc(nm.charAt(0).toUpperCase())+'</div><div style="flex:1"><b>'+esc(nm)+'</b><br><small style="color:#8aa8c4">Settings</small></div></div>',false)}
+function voicesPanel(){
+  const col=(g,L)=>L.map((v,i)=>'<button data-act="vsel" data-g="'+g+'" data-n="'+(i+1)+'" class="'+(S.gender===g&&vnum(g)===i+1?'on':'')+'">'+(i+1)+' · '+v[0]+' — '+v[1]+'</button>').join('');
+  const hd=t=>'<div class="orb-font" style="font-size:10px;color:#4db2ff;margin-bottom:6px;letter-spacing:2px">'+t+'</div>';
+  openPanel('VOICES','<div class="vcols"><div>'+hd('FEMALE')+col('female',VF)+'</div><div>'+hd('MALE')+col('male',VM)+'</div></div><small style="color:#8aa8c4">Tap a voice to hear it. You can also say "male voice 3", "female voice 2", "voice number 4" or "next voice". These voices use your Gemini key.</small>',true)}
+function histPanel(){
+  const rows=chatLog.length?chatLog.map(h=>'<div class="hrow"><small>'+esc(new Date(h.t).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}))+'</small><div>You: '+esc(h.q)+'</div><div style="color:#4db2ff">BODAM: '+esc(h.a)+'</div></div>').join(''):'<small style="color:#8aa8c4">No history yet.</small>';
+  openPanel('HISTORY','<div style="max-height:380px;overflow:auto">'+rows+'</div><button data-act="clrh" style="margin-top:6px">Clear history</button>',true)}
+function acctPanel(){
+  const a=acct();
+  openPanel('PROFILE',a?'<div style="display:flex;align-items:center;gap:12px"><div class="avatar">'+esc(a.name.charAt(0).toUpperCase())+'</div><div><b>'+esc(a.name)+'</b><br><small style="color:#8aa8c4">BODAM user</small></div></div><button data-act="logout">Remove name</button><button data-act="delall" style="border-color:#f87171;color:#f87171;margin-top:10px">Delete account and all data</button><small style="color:#8aa8c4">Your name, API keys, history and settings will be permanently removed from this device.</small>':'<small style="color:#8aa8c4">Enter your name and BODAM will address you by it. Your name is stored only on this device.</small><input type="text" id="acName" placeholder="Your name"><button data-act="login" class="on">Save name</button><button data-act="delall" style="border-color:#f87171;color:#f87171;margin-top:10px">Delete all data</button>',true)}
+function helpPanel(){
+  openPanel('WHAT CAN I SAY','<div class="hrow">"Open YouTube" · "Play Arijit Singh songs on YouTube"</div><div class="hrow">"Search weather on Google" · "Directions to Jaipur"</div><div class="hrow">"Open WhatsApp" · "Open Instagram" · "Open Gmail"</div><div class="hrow">"Set a 5 minute timer" · "Call 98XXXXXXXX"</div><div class="hrow">"Male voice 3" · "Female voice 2" · "Next voice"</div><div class="hrow">"Show history" · "Clear history"</div><div class="hrow">"Open settings" · "Open voice settings" · "Open API key"</div><div class="hrow">"Open terms and conditions" · "Open privacy policy" · "Open about"</div><div class="hrow">"Close settings" · "Close menu"</div><div class="hrow">"Stop" · "Bas karo" to stop listening</div><button data-act="tab">Open apps: '+(cfg.sameTab?'In this tab':'New tab with tap button')+'</button><small style="color:#8aa8c4">Chrome does not allow opening a new tab without a tap. The first option shows a tap button, the second opens the link directly in this tab.</small>',true)}
+
+const CONTACT_EMAIL='';
+const contactP=()=>'<h4>CONTACT</h4><p>IK Technology'+(CONTACT_EMAIL?' · '+CONTACT_EMAIL:'')+'</p>';
+function settingsPanel(){
+  openPanel('SETTINGS','<div class="mgrid" style="grid-template-columns:1fr"><button data-act="api">API Key</button><button data-act="setvoice">Voice</button><button data-act="acct">Profile</button><button data-act="about">About</button><button data-act="terms">Terms &amp; Conditions</button><button data-act="privacy">Privacy Policy</button></div>',menuPanel)}
+function aboutPanel(){
+  openPanel('ABOUT','<div class="legal"><div style="text-align:center;margin-bottom:10px"><div class="orb-font" style="font-size:28px;letter-spacing:9px;color:#fff;text-shadow:0 0 8px rgba(77,178,255,.6)">BODAM</div><small style="color:#8aa8c4">AI Voice Assistant · Version 1.0.0</small></div><p>BODAM is a smart AI voice assistant that understands Hindi and English. Ask questions by voice, open websites such as YouTube, Google and Maps, set timers and choose the voice you like.</p><h4>FEATURES</h4><ul><li>Voice chat: press START once, then just talk</li><li>5 female and 5 male voices</li><li>Chat through Gemini, OpenAI, Claude, Groq, OpenRouter or Ollama</li><li>Voice commands for settings, history, apps and search</li></ul><h4>DEVELOPER</h4><p>Designed and developed by Imran, BCA software student, under IK Technology.</p>'+contactP()+'<p style="color:#8aa8c4">© 2026 IK Technology. All rights reserved.</p></div>',settingsPanel)}
+function termsPanel(){
+  openPanel('TERMS &amp; CONDITIONS','<div class="legal"><small style="color:#8aa8c4">Last updated: 17 November 2026</small><h4>1. ACCEPTANCE</h4><p>By using BODAM you agree to these Terms. If you do not agree, please do not use the app.</p><h4>2. SERVICE</h4><p>BODAM is an AI voice and chat assistant. It connects to the AI services whose API keys you provide.</p><h4>3. API KEYS AND COSTS</h4><p>Your API key is your responsibility. Do not share it with anyone. Usage limits and charges of providers such as Google, OpenAI, Anthropic, Groq and OpenRouter apply to your own account with them. IK Technology is not responsible for these charges.</p><h4>4. AI RESPONSES</h4><p>AI responses can be wrong or incomplete. Do not treat them as medical, legal, financial or other professional advice. Please verify important information yourself.</p><h4>5. ACCEPTABLE USE</h4><p>Do not use BODAM for anything illegal, harmful or abusive, or to cause harm to others.</p><h4>6. MICROPHONE</h4><p>The microphone listens only after you press START. You can stop it at any time with the STOP button or by saying stop.</p><h4>7. AVAILABILITY</h4><p>The service is provided as is. It may stop working because of third-party limits, internet issues or provider outages. We do not guarantee uninterrupted service.</p><h4>8. LIABILITY</h4><p>To the extent permitted by law, IK Technology is not liable for any loss arising from the use of BODAM.</p><h4>9. CHANGES</h4><p>We may update these Terms at any time. Continued use of the app means you accept the updated Terms.</p>'+contactP()+'</div>',settingsPanel)}
+function privacyPanel(){
+  openPanel('PRIVACY POLICY','<div class="legal"><small style="color:#8aa8c4">Last updated: 17 November 2026</small><h4>1. DATA STORED ON YOUR DEVICE</h4><p>Your API keys, model names, voice settings, name and chat history (last 100 chats) are stored only in your browser or on your phone. IK Technology has no server that receives this data.</p><h4>2. DATA SENT TO THIRD PARTIES</h4><ul><li>Your messages are sent to the AI provider you selected under USE (Gemini, OpenAI, Claude, Groq, OpenRouter or Ollama)</li><li>To create the BODAM voice, the reply text is sent to Google Gemini</li><li>Converting your speech to text is done by the browser speech recognition service (in Chrome this is provided by Google)</li><li>Fonts are loaded from Google Fonts</li></ul><p>These services have their own privacy policies, please read them as well.</p><h4>3. MICROPHONE</h4><p>The microphone is used only after you press START. We do not record or store audio.</p><h4>4. NO SALE OF DATA, NO ADS</h4><p>We do not sell your data, show ads or track you.</p><h4>5. DELETING YOUR DATA</h4><p>History: Menu, History, Clear history. Keys: Settings, API Key, clear the field and Save. Everything at once: Settings, Profile, Delete account and all data.</p><h4>6. CHILDREN</h4><p>BODAM is not intended for children under 13.</p><h4>7. CHANGES</h4><p>This policy may change. The latest version is always shown here.</p>'+contactP()+'</div>',settingsPanel)}
+$('#pBody').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
+  if(a==='settings')settingsPanel();else if(a==='about')aboutPanel();else if(a==='terms')termsPanel();else if(a==='privacy')privacyPanel();else if(a==='setvoice'){closePanel();openSet('voice')}
+  else if(a==='voices')voicesPanel();else if(a==='hist')histPanel();else if(a==='acct')acctPanel();else if(a==='help')helpPanel();
+  else if(a==='api'){closePanel();openSet()}else if(a==='home')location.href='index.html';
+  else if(a==='vsel'){const g=b.dataset.g,n=+b.dataset.n;setVoiceNum(g,n);voicesPanel();speak(S.lang==='hi'?'Namaste, main BODAM hoon. Ye meri awaaz number '+n+' hai.':'Hello, I am BODAM. This is voice number '+n+'.')}
+  else if(a==='clrh'){chatLog=[];localStorage.removeItem('ikb_hist');histPanel()}
+  else if(a==='login'){const n=(($('#acName')||{}).value||'').trim()||'Guest';localStorage.setItem('ikb_acct',JSON.stringify({name:n}));acctPanel()}
+  else if(a==='delall'){if(confirm('Your account and all data (name, API keys, history, settings) will be permanently deleted. Continue?')){Object.keys(localStorage).filter(k=>k.indexOf('ikb_')===0).forEach(k=>localStorage.removeItem(k));location.reload()}}
+  else if(a==='logout'){localStorage.removeItem('ikb_acct');acctPanel()}
+  else if(a==='tab'){cfg.sameTab=!cfg.sameTab;localStorage.setItem('ikb_cfg',JSON.stringify(cfg));helpPanel()}
+});
+$('#menuBtn').onclick=menuPanel;$('#pBack').onclick=()=>backFn();$('#pClose').onclick=closePanel;$('#navVoice').onclick=voicesPanel;$('#navHist').onclick=histPanel;$('#navAcct').onclick=acctPanel;$('#navHelp').onclick=helpPanel;
+
+/* ===== voice commands that do things ===== */
+function showOpen(u,label){const b=$('#openBtn');b.textContent='Tap to open '+label;b.onclick=()=>{if(!window.open(u,'_blank'))location.href=u;b.style.display='none'};b.style.display='block';setTimeout(()=>{b.style.display='none'},20000)}
+function openUrl(u,label){if(cfg.sameTab){setTimeout(()=>{location.href=u},1800);return true}const w=window.open(u,'_blank');if(!w){showOpen(u,label);return false}return true}
+function go(u,label,msg){return openUrl(u,label)?msg:msg+' Tap the button on screen.'}
+const SITES=[[/youtube|यूट्यूब|you tube/i,'https://www.youtube.com/','YouTube'],[/whatsapp|व्हाट्सएप|वाट्सएप|व्हाट्सऐप/i,'https://wa.me/','WhatsApp'],[/instagram|इंस्टाग्राम/i,'https://www.instagram.com/','Instagram'],[/facebook|फेसबुक/i,'https://www.facebook.com/','Facebook'],[/gmail|जीमेल/i,'https://mail.google.com/','Gmail'],[/\bmaps?\b|मैप/i,'https://www.google.com/maps','Maps'],[/play ?store|प्ले ?स्टोर/i,'https://play.google.com/store','Play Store'],[/github|गिटहब/i,'https://github.com/','GitHub'],[/telegram|टेलीग्राम/i,'https://web.telegram.org/','Telegram'],[/google|गूगल/i,'https://www.google.com/','Google']];
+const STOPW=new Set('youtube you tube par pe per mein me on in search karo kar do de dena chalao chala play dikhao dikha dekho dekhna sunao suna ka ki ke ko gaana gana gaane song video open kholo khol the a google please plz mujhe mere liye bhi zara jara ek kuch rasta navigate directions route यूट्यूब पर में सर्च करो कर दो चलाओ चला दिखाओ दिखा देखो सुनाओ सुना का की के को गाना गाने वीडियो खोलो खोल गूगल प्लीज मुझे मेरे लिए भी ज़रा एक रास्ता'.split(' '));
+function cleanQ(q){return q.split(/\s+/).filter(w=>w&&!STOPW.has(w.toLowerCase())).join(' ').trim()}
+function numFrom(l){
+  const W={ek:1,one:1,'एक':1,do:2,two:2,'दो':2,teen:3,three:3,'तीन':3,char:4,chaar:4,four:4,'चार':4,panch:5,paanch:5,five:5,'पांच':5,'पाँच':5};
+  const m=l.match(/(?:number|no\.?|नंबर|nambar|numbar)\s*([a-zA-Z0-9ऀ-ॿ]+)/i)||l.match(/([a-zA-Z0-9ऀ-ॿ]+)\s*(?:number|नंबर|nambar)/i);
+  if(m){const k=m[1].toLowerCase();const dm=k.match(/^([1-5])/);if(dm)return +dm[1];if(W[k])return W[k]}
+  const d=l.match(/(?:^|\s)([1-5])(?:\s|$)/);return d?+d[1]:0}
+function route(l,q,hi){
+  const OPN=/open|kholo|khol|dikhao|dikha|show|दिखाओ|दिखा|खोलो|खोल|ओपन|chalu|चालू/i.test(l),SHORT=l.trim().split(/\s+/).length<=4,GO=OPN||SHORT;
+  if(GO&&/terms|condition|टर्म|कंडीशन|शर्त/i.test(l)){closePanel();termsPanel();return hi?'Terms and conditions khol di.':'Terms and conditions opened.'}
+  if(GO&&/privacy|policy|प्राइवेसी|पॉलिसी|गोपनीयता/i.test(l)){closePanel();privacyPanel();return hi?'Privacy policy khol di.':'Privacy policy opened.'}
+  if(GO&&/\babout\b|अबाउट|app ke bare|ऐप के बारे/i.test(l)){closePanel();aboutPanel();return hi?'About page khol diya.':'About page opened.'}
+  if(GO&&/setting|सेटिंग/i.test(l)){
+    if(/voice|awaaz|awaz|आवाज|वॉइस|वॉयस/i.test(l)){closePanel();openSet('voice');return hi?'Voice settings khol di.':'Voice settings opened.'}
+    if(/\bapi\b|\bkey\b|एपीआई|की\b/i.test(l)){closePanel();openSet('api');return hi?'API key settings khol di.':'API key settings opened.'}
+    closePanel();settingsPanel();return hi?'Settings khol di.':'Settings opened.'}
+  if(GO&&/\bapi\b.*\bkey\b|एपीआई/i.test(l)){closePanel();openSet('api');return hi?'API key settings khol di.':'API key settings opened.'}
+  if(OPN&&/profile|account|प्रोफाइल|अकाउंट/i.test(l)){acctPanel();return hi?'Profile khol di.':'Profile opened.'}
+  if(GO&&/kya bol sakte|क्या बोल सकते|\bhelp\b|हेल्प|मदद/i.test(l)){helpPanel();return hi?'Ye lo, main ye sab kar sakti hoon.':'Here is what I can do.'}
+  if(/voice|awaaz|awaz|aawaz|आवाज|वॉइस|वॉयस|वोइस/i.test(l)){
+    const g=/female|फीमेल|ladki|लड़की|girl/i.test(l)?'female':/(^|\s)male(\s|$)|मेल|ladka|लड़का|boy/i.test(l)?'male':S.gender,n=numFrom(l);
+    if(n){setVoiceNum(g,n);return (hi?'Theek hai, ab ':'Done, now ')+g+' voice number '+n+', '+(g==='male'?VM:VF)[n-1][0]+'.'}
+    if(/next|agli|agla|dusri|doosri|badlo|change|बदलो|अगली|दूसरी|बदल/i.test(l)){const k=setVoiceNum(g,vnum(g)%5+1);return (hi?'Lo, ab ':'Here, now ')+g+' voice number '+k+'.'}
+  }
+  if(/history|हिस्ट्री|इतिहास/i.test(l)){if(/clear|delete|saaf|हटा|मिटा/i.test(l)){chatLog=[];localStorage.removeItem('ikb_hist');return hi?'History saaf kar di.':'History cleared.'}histPanel();return hi?'Ye lo History.':'Here is your history.'}
+  if(/\bmenu\b|मेन्यू/i.test(l)){menuPanel();return hi?'Menu khol diya.':'Menu opened.'}
+  if(/(voices|awaazen|awazen|आवाज़ें|आवाजें)/i.test(l)&&/list|dikhao|दिखाओ|menu|panel|saari|सभी/i.test(l)){voicesPanel();return hi?'Ye lo saari voices.':'Here are all voices.'}
+  const tm=l.match(/(\d+)\s*(minute|min|मिनट|second|sec|सेकंड|hour|घंटा|घंटे)/i);
+  if(tm&&/timer|alarm|टाइमर|अलार्म|baad|बाद|yaad|याद/i.test(l)){const n=+tm[1],u=tm[2].toLowerCase(),ms=n*(/^(s|से)/.test(u)?1000:/^(h|घ)/.test(u)?3600000:60000);setTimeout(()=>{say('','Timer finished');speak(hi?'Aapka timer poora ho gaya.':'Your timer is done.')},ms);return hi?'Theek hai, '+n+' '+tm[2]+' ka timer laga diya. Ye tab tak chalega jab tak ye page khula hai.':'Timer set for '+n+' '+tm[2]+'. It works while this page stays open.'}
+  const cm=l.match(/(?:call|कॉल)\D*(\d{8,13})|(\d{8,13})\D*(?:call|कॉल)/i);
+  if(cm){const n=cm[1]||cm[2];return go('tel:'+n,'Call '+n,hi?n+' par call laga rahi hoon.':'Calling '+n+'.')}
+  if(/rasta|रास्ता|navigate|directions|route|kaise jaye|कैसे जाएं|near me|paas me|पास में|nearby/i.test(l)){const t=cleanQ(q)||'near me';return go('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(t),'Maps',hi?'Maps me '+t+' dhoondh rahi hoon.':'Searching '+t+' on Maps.')}
+  const yt=/gaana|gana|gaane|song|गाना|गाने|chalao|चलाओ|सुनाओ|sunao|\bplay\b(?!\s*store)|(youtube|यूट्यूब).*(search|chala|play|dekh|dikha|सर्च|चला|देख|दिखा|सुन)/i.test(l);
+  if(yt){const t=cleanQ(q);if(t)return go('https://www.youtube.com/results?search_query='+encodeURIComponent(t),'YouTube',hi?'YouTube par '+t+' chala rahi hoon.':'Playing '+t+' on YouTube.')}
+  if(/search|सर्च|dhundo|ढूंढो|khojo|खोजो|google par|गूगल पर/i.test(l)){const t=cleanQ(q);if(t)return go('https://www.google.com/search?q='+encodeURIComponent(t),'Google',hi?'Google par '+t+' search kar rahi hoon.':'Searching Google for '+t+'.')}
+  if(/open|kholo|khol|chalu|start|खोलो|खोल|ओपन|चालू/i.test(l)){for(const x of SITES)if(x[0].test(l))return go(x[1],x[2],hi?x[2]+' khol rahi hoon.':'Opening '+x[2]+'.')}
+  return null;
+}
+
+/* ===== boot ===== */
+setGender(S.gender);setLang(S.lang);
+$('#boot').onclick=()=>{$('#boot').remove();const ac=acct(),nm=ac?(' '+ac.name):'',g=S.lang==='hi'?'Namaste'+nm+'. Main BODAM hoon. Systems online hain.':'Welcome'+nm+'. I am BODAM. All systems online.';say('',g);speak(g,startAuto)};
+</script>
+</body>
+</html>
