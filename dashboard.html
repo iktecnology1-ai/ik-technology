@@ -333,6 +333,7 @@ async function speakGemini(text,end){
   }
 }
 function speak(text,end){
+  pauseMic();
   spkId++;if(curAudio){curAudio.pause();curAudio=null}
   const t=cfg.tts||{};
   if(ready('gemini')&&t.engine!=='browser'&&!(t.fb!==false&&Date.now()<ttsCool))return speakGemini(text,end);
@@ -347,71 +348,50 @@ $('#vM').onclick=()=>{setGender('male');speak(S.lang==='hi'?'Namaste, main BODAM
 
 $('#test').onclick=()=>speak(S.lang==='hi'?'Main BODAM hoon, aapka personal AI assistant.':'I am BODAM, your personal AI assistant.');
 
-/* ===== voice in: persistent recognition to avoid repeated Android mic restarts ===== */
-const SR=window.SpeechRecognition||window.webkitSpeechRecognition;let rec=null;
-let auto=false,busy=false,busyAt=0,lastErr='',restartTimer=null;
+/* ===== voice in: continuous Gemini audio transcription =====
+   Keeps one microphone/MediaRecorder session open; no SpeechRecognition restart beeps. */
+let auto=false,busy=false,busyAt=0,micStream=null,micRecorder=null,micQueue=Promise.resolve(),micStarting=false;
 function setBusy(b){busy=b;busyAt=Date.now()}
-function setAuto(on){auto=on;busy=false;$('#talk').classList.toggle('live',on);$('#talkT').textContent=on?'STOP BODAM':'START BODAM';$('#talkS').textContent=on?'Listening... just speak':'Tap once, then just talk'}
-let netErr=0;
-if(SR){
-  rec=new SR();rec.continuous=true;rec.interimResults=true;
-  rec.onstart=()=>{S.listening=true;lastErr=''};
-  rec.onend=()=>{
-    S.listening=false;
-    if(auto&&!busy&&!S.speaking){
-      clearTimeout(restartTimer);
-      // Android may end a recognition session by itself. Restart only in that case,
-      // never after every recognized sentence or on a periodic watchdog.
-      restartTimer=setTimeout(listen,1500);
-    }
-  };
-  rec.onerror=e=>{
-    lastErr=e.error;
-    if(e.error==='not-allowed'||e.error==='service-not-allowed'){
-      setAuto(false);say('','Allow microphone permission, then press START.');
-    }else if(e.error==='network'){
-      netErr++;
-      if(netErr>=3){setAuto(false);say('','Voice recognition cannot reach its server. Check your internet, VPN or Private DNS, then press START again.');}
-      else say('','Mic network error. Trying again...');
-    }else if(e.error!=='no-speech'&&e.error!=='aborted')say('','Mic error: '+e.error);
-  };
-  rec.onresult=e=>{
-    // Ignore audio while BODAM is replying, preventing its own voice from being transcribed.
-    if(busy||S.speaking)return;
-    let t='',finalText='';
-    for(let i=e.resultIndex;i<e.results.length;i++){
-      const r=e.results[i];t+=r[0].transcript;
-      if(r.isFinal)finalText+=r[0].transcript;
-    }
-    if(t)say(t,'...');
-    if(finalText.trim()){
-      netErr=0;setBusy(true);
-      // Do NOT abort/restart the mic here. Keep the same recognition session alive.
-      handle(finalText.trim());
-    }
-  };
+function setAuto(on){auto=on;$('#talk').classList.toggle('live',on);$('#talkT').textContent=on?'STOP BODAM':'START BODAM';$('#talkS').textContent=on?'Listening... just speak':'Tap once, then just talk'}
+function pauseMic(){try{if(micRecorder&&micRecorder.state==='recording')micRecorder.pause()}catch(e){}}
+function resumeMic(){try{if(auto&&micRecorder&&micRecorder.state==='paused'&&!S.speaking)micRecorder.resume()}catch(e){}}
+function stopMic(){try{if(micRecorder&&micRecorder.state!=='inactive')micRecorder.stop()}catch(e){};micRecorder=null;if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}}
+function blobB64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=reject;r.readAsDataURL(blob)})}
+async function transcribeGemini(blob){
+  if(!ready('gemini'))throw new Error('Gemini API key Settings mein add karo.');
+  if(blob.size<2500)return '';
+  const data=await blobB64(blob),mime=blob.type||'audio/webm';
+  const model=(cfg.gemini&&cfg.gemini.model)||'gemini-2.0-flash';
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gemini.key},body:JSON.stringify({contents:[{role:'user',parts:[{text:'Transcribe the spoken audio exactly. It may be Hindi, Hinglish, or English. Return only the words spoken, in the original language and script. If there is no clear speech, return an empty string.'},{inlineData:{mimeType:mime,data}}]}],generationConfig:{temperature:0}})});
+  const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||('Gemini audio error '+r.status));
+  return String(j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join(' ')||'').trim();
 }
-function listen(){
-  if(!auto||!rec||S.speaking||busy||S.listening)return;
-  try{rec.lang=S.lang==='hi'?'hi-IN':'en-IN';rec.start();}
-  catch(e){/* Already starting/running: leave the current session alone. */}
+function startRecorder(stream){
+  micStream=stream;
+  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t));
+  micRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
+  micRecorder.ondataavailable=e=>{if(!e.data||!e.data.size||!auto)return;const chunk=e.data;micQueue=micQueue.then(async()=>{
+    if(!auto||S.speaking||busy)return;
+    try{const text=await transcribeGemini(chunk);if(text&&auto&&!busy&&!S.speaking){setBusy(true);pauseMic();say(text,'...');await handle(text)}}
+    catch(err){if(auto){say('','Mic transcription error: '+(err.message||'Please check Gemini key and internet.'));}}
+  }).catch(()=>{});};
+  micRecorder.onerror=()=>{if(auto)say('','Microphone recording error. Please stop and start again.')};
+  micRecorder.start(6000);
+  S.listening=true;
 }
-function afterSpeak(){setBusy(false);/* Persistent recognition is already listening. */}
-function stopAuto(){
-  setAuto(false);clearTimeout(restartTimer);
-  try{rec&&rec.abort()}catch(e){}
-  speechSynthesis.cancel();
-  if(curAudio){curAudio.pause();curAudio=null}
-  S.speaking=false;S.listening=false;
+async function startAuto(){
+  if(micStarting||auto)return;
+  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){say('','This browser does not support continuous microphone recording. Please use updated Chrome.');return}
+  if(!ready('gemini')){say('','Please add your Gemini API key in Settings first.');return}
+  micStarting=true;setAuto(true);
+  try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});if(!auto){stream.getTracks().forEach(t=>t.stop());return}startRecorder(stream);say('','BODAM is listening. Speak now.')}
+  catch(e){setAuto(false);say('','Microphone permission nahi mili. Browser settings mein mic allow karo.')}
+  finally{micStarting=false}
 }
-function startAuto(){
-  if(!rec){say('','Please use Chrome for voice input.');return}
-  setAuto(true);listen();
-}
+function afterSpeak(){setBusy(false);resumeMic()}
+function stopAuto(){setAuto(false);setBusy(false);stopMic();S.speaking=false;S.listening=false;speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}}
 $('#talk').onclick=()=>auto?stopAuto():startAuto();
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden&&auto&&!S.listening&&!busy&&!S.speaking){clearTimeout(restartTimer);restartTimer=setTimeout(listen,700)}
-});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&auto)pauseMic();else if(auto&&!S.speaking)resumeMic()});
 /* ===== API providers: multi-provider + automatic failover ===== */
 const PROV=[
  {id:'gemini',name:'Gemini',model:'gemini-2.0-flash',kind:'gemini'},
