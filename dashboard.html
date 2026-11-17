@@ -348,60 +348,67 @@ $('#vM').onclick=()=>{setGender('male');speak(S.lang==='hi'?'Namaste, main BODAM
 
 $('#test').onclick=()=>speak(S.lang==='hi'?'Main BODAM hoon, aapka personal AI assistant.':'I am BODAM, your personal AI assistant.');
 
-/* ===== voice in: continuous Gemini audio transcription =====
-   Keeps one microphone/MediaRecorder session open; no SpeechRecognition restart beeps. */
-let auto=false,busy=false,busyAt=0,micStream=null,micRecorder=null,micQueue=Promise.resolve(),micStarting=false;
+/* ===== voice in: PCM capture + silence detection + Gemini transcription =====
+   Uses raw microphone samples, not MediaRecorder WebM fragments. */
+let auto=false,busy=false,busyAt=0,micStream=null,micContext=null,micSource=null,micProcessor=null,micStarting=false;
+let speechParts=[],speechActive=false,speechLastAt=0,speechStartAt=0,transcribeQueue=Promise.resolve();
 function setBusy(b){busy=b;busyAt=Date.now()}
 function setAuto(on){auto=on;$('#talk').classList.toggle('live',on);$('#talkT').textContent=on?'STOP BODAM':'START BODAM';$('#talkS').textContent=on?'Listening... just speak':'Tap once, then just talk'}
-function pauseMic(){try{if(micRecorder&&micRecorder.state==='recording')micRecorder.pause()}catch(e){}}
-function resumeMic(){try{if(auto&&micRecorder&&micRecorder.state==='paused'&&!S.speaking)micRecorder.resume()}catch(e){}}
-function stopMic(){try{if(micRecorder&&micRecorder.state!=='inactive')micRecorder.stop()}catch(e){};micRecorder=null;if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}}
+function pauseMic(){if(micContext&&micContext.state==='running')micContext.suspend().catch(()=>{})}
+function resumeMic(){if(auto&&micContext&&micContext.state==='suspended'&&!S.speaking&&!busy)micContext.resume().catch(()=>{})}
+function stopMic(){try{if(micProcessor){micProcessor.disconnect();micProcessor.onaudioprocess=null}}catch(e){}try{micSource&&micSource.disconnect()}catch(e){}try{if(micContext)micContext.close()}catch(e){}micProcessor=null;micSource=null;micContext=null;if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}speechParts=[];speechActive=false}
 function blobB64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=reject;r.readAsDataURL(blob)})}
-async function audioBlobToGeminiWav(blob){
-  const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)throw new Error('Audio conversion is not supported in this browser.');
-  const ctx=new Ctx();try{
-    const decoded=await ctx.decodeAudioData(await blob.arrayBuffer());
-    const rate=16000,src=decoded.getChannelData(0),step=decoded.sampleRate/rate,count=Math.floor(src.length/step),pcm=new Uint8Array(count*2),view=new DataView(pcm.buffer);
-    for(let i=0;i<count;i++){const x=Math.max(-1,Math.min(1,src[Math.floor(i*step)]));view.setInt16(i*2,x<0?x*32768:x*32767,true)}
-    const wav=new ArrayBuffer(44+pcm.length),v=new DataView(wav),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
-    w(0,'RIFF');v.setUint32(4,36+pcm.length,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,pcm.length,true);new Uint8Array(wav,44).set(pcm);return new Blob([wav],{type:'audio/wav'});
-  }finally{try{await ctx.close()}catch(e){}}
+function floatToWav(parts,inputRate){
+  const total=parts.reduce((n,a)=>n+a.length,0);if(!total)throw new Error('No speech audio captured.');
+  const joined=new Float32Array(total);let off=0;for(const a of parts){joined.set(a,off);off+=a.length}
+  const rate=16000,step=inputRate/rate,count=Math.floor(joined.length/step),pcm=new ArrayBuffer(count*2),dv=new DataView(pcm);
+  for(let i=0;i<count;i++){const x=Math.max(-1,Math.min(1,joined[Math.floor(i*step)]));dv.setInt16(i*2,x<0?x*32768:x*32767,true)}
+  const wav=new ArrayBuffer(44+pcm.byteLength),v=new DataView(wav),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  w(0,'RIFF');v.setUint32(4,36+pcm.byteLength,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,pcm.byteLength,true);new Uint8Array(wav,44).set(new Uint8Array(pcm));return new Blob([wav],{type:'audio/wav'});
 }
-async function transcribeGemini(blob){
+async function transcribeGemini(wav){
   if(!ready('gemini'))throw new Error('Gemini API key Settings mein add karo.');
-  if(blob.size<2500)return '';
-  const wav=await audioBlobToGeminiWav(blob),data=await blobB64(wav);
-  const model='gemini-2.0-flash';
-  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gemini.key},body:JSON.stringify({contents:[{role:'user',parts:[{text:'Transcribe the spoken audio exactly. It may be Hindi, Hinglish, or English. Return only the words spoken, in the original language and script. If there is no clear speech, return an empty string.'},{inlineData:{mimeType:'audio/wav',data}}]}],generationConfig:{temperature:0}})});
+  if(wav.size<3000)return '';
+  const data=await blobB64(wav),model=(cfg.gemini&&cfg.gemini.model)||'gemini-2.0-flash';
+  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(model)+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gemini.key},body:JSON.stringify({contents:[{role:'user',parts:[{text:'Transcribe the spoken audio exactly. It may be Hindi, Hinglish, or English. Return only the words spoken, in the original language and script. If there is no clear speech, return an empty string.'},{inlineData:{mimeType:'audio/wav',data}}]}],generationConfig:{temperature:0}})});
   const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||('Gemini audio error '+r.status));
   return String(j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join(' ')||'').trim();
 }
-function startRecorder(stream){
-  micStream=stream;
-  const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(t=>window.MediaRecorder&&MediaRecorder.isTypeSupported(t));
-  micRecorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);
-  micRecorder.ondataavailable=e=>{if(!e.data||!e.data.size||!auto)return;const chunk=e.data;micQueue=micQueue.then(async()=>{
-    if(!auto||S.speaking||busy)return;
-    try{const text=await transcribeGemini(chunk);if(text&&auto&&!busy&&!S.speaking){setBusy(true);pauseMic();say(text,'...');await handle(text)}}
-    catch(err){if(auto){say('','Mic transcription error: '+(err.message||'Please check Gemini key and internet.'));}}
-  }).catch(()=>{});};
-  micRecorder.onerror=()=>{if(auto)say('','Microphone recording error. Please stop and start again.')};
-  micRecorder.start(6000);
-  S.listening=true;
+async function processSpeech(parts,rate){
+  if(!auto||!parts.length||busy||S.speaking)return;
+  const wav=floatToWav(parts,rate);
+  transcribeQueue=transcribeQueue.then(async()=>{
+    if(!auto||busy||S.speaking)return;
+    try{const text=await transcribeGemini(wav);if(text&&auto&&!busy&&!S.speaking){setBusy(true);pauseMic();say(text,'...');await handle(text)}}
+    catch(err){if(auto)say('','Mic transcription error: '+(err.message||'Please check Gemini key and internet.'))}
+  }).catch(()=>{});
+}
+function startPCM(stream){
+  micStream=stream;const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)throw new Error('AudioContext not supported');
+  micContext=new Ctx();micSource=micContext.createMediaStreamSource(stream);micProcessor=micContext.createScriptProcessor(4096,1,1);
+  micProcessor.onaudioprocess=e=>{
+    if(!auto||busy||S.speaking)return;const input=e.inputBuffer.getChannelData(0),copy=new Float32Array(input),now=Date.now();
+    let sum=0;for(let i=0;i<input.length;i++)sum+=input[i]*input[i];const rms=Math.sqrt(sum/input.length);
+    if(rms>0.018){if(!speechActive){speechActive=true;speechStartAt=now;speechParts=[]}speechLastAt=now;speechParts.push(copy)}else if(speechActive){speechParts.push(copy)}
+    if(speechActive&&(now-speechLastAt>850||now-speechStartAt>12000)){
+      const parts=speechParts;speechParts=[];speechActive=false;processSpeech(parts,micContext.sampleRate);
+    }
+  };
+  micSource.connect(micProcessor);micProcessor.connect(micContext.destination);micContext.resume();S.listening=true;
 }
 async function startAuto(){
   if(micStarting||auto)return;
-  if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){say('','This browser does not support continuous microphone recording. Please use updated Chrome.');return}
+  if(!navigator.mediaDevices?.getUserMedia||!(window.AudioContext||window.webkitAudioContext)){say('','This browser does not support continuous microphone recording. Please use updated Chrome.');return}
   if(!ready('gemini')){say('','Please add your Gemini API key in Settings first.');return}
   micStarting=true;setAuto(true);
-  try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});if(!auto){stream.getTracks().forEach(t=>t.stop());return}startRecorder(stream);say('','BODAM is listening. Speak now.')}
-  catch(e){setAuto(false);say('','Microphone permission nahi mili. Browser settings mein mic allow karo.')}
+  try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});if(!auto){stream.getTracks().forEach(t=>t.stop());return}startPCM(stream);say('','BODAM is listening. Speak now.')}
+  catch(e){setAuto(false);stopMic();say('','Microphone start nahi ho saka: '+(e.message||'Please allow microphone permission.'))}
   finally{micStarting=false}
 }
 function afterSpeak(){setBusy(false);resumeMic()}
 function stopAuto(){setAuto(false);setBusy(false);stopMic();S.speaking=false;S.listening=false;speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}}
 $('#talk').onclick=()=>auto?stopAuto():startAuto();
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&auto)pauseMic();else if(auto&&!S.speaking)resumeMic()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&auto)pauseMic();else if(auto&&!S.speaking&&!busy)resumeMic()});
 /* ===== API providers: multi-provider + automatic failover ===== */
 const PROV=[
  {id:'gemini',name:'Gemini',model:'gemini-2.0-flash',kind:'gemini'},
