@@ -292,13 +292,16 @@ async function gemTTS(text,voice){
   const known=localStorage.getItem('ikb_tts_ok'),combos=[];
   GM.forEach(m=>['new','old'].forEach(f=>combos.push(m+'|'+f)));
   if(known&&combos.includes(known)){combos.splice(combos.indexOf(known),1);combos.unshift(known)}
+  const limited=new Set();let lim=false;
   for(const c of combos){
     const [m,f]=c.split('|');
+    if(limited.has(m))continue;
     const part=f==='new'?{text:text,speech_metadata:{style:style}}:{text:'Say in a calm, warm, natural human voice: '+text};
     const vc=f==='new'?{voice:voice}:{prebuiltVoiceConfig:{voiceName:voice}};
     try{
       const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':key},body:JSON.stringify({contents:[{role:'user',parts:[part]}],generationConfig:{responseModalities:['AUDIO'],speechConfig:{voiceConfig:vc}}})});
-      if(r.status===429||r.status===401||r.status===403)throw new Error('stop '+r.status);
+      if(r.status===401||r.status===403)throw new Error('stop '+r.status);
+      if(r.status===429){lim=true;limited.add(m);continue}
       if(!r.ok)continue;
       const j=await r.json(),d=j.candidates&&j.candidates[0]&&j.candidates[0].content&&j.candidates[0].content.parts&&j.candidates[0].content.parts[0]&&j.candidates[0].content.parts[0].inlineData&&j.candidates[0].content.parts[0].inlineData.data;
       if(!d)continue;
@@ -307,7 +310,7 @@ async function gemTTS(text,voice){
       return (b[0]===82&&b[1]===73&&b[2]===70&&b[3]===70)?new Blob([b],{type:'audio/wav'}):pcmWav(b);
     }catch(e){if(String(e.message).indexOf('stop')===0)throw e}
   }
-  throw new Error('no tts model worked');
+  throw new Error(lim?'stop 429':'no tts model worked');
 }
 async function speakGemini(text,end){
   const id=++spkId;
