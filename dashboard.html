@@ -184,6 +184,7 @@ input[type=radio]{accent-color:#4db2ff;width:18px;height:18px}
 
 <script>
 const $=s=>document.querySelector(s);
+if(!('speechSynthesis' in window)){window.speechSynthesis={cancel(){},speak(){},getVoices(){return[]},onvoiceschanged:null};window.SpeechSynthesisUtterance=window.SpeechSynthesisUtterance||function(t){this.text=t}}
 const S={gender:localStorage.getItem('ikb_g')||'female',lang:localStorage.getItem('ikb_l')||'hi',turns:0,vr:0,mem:+(localStorage.getItem('ikb_m')||0),listening:false,speaking:false};
 
 /* ===== fit stage (landscape, auto-rotate in portrait) ===== */
@@ -261,7 +262,8 @@ function pickVoice(l){
   return best;
 }
 function speakBrowser(text,end){
-  if(!('speechSynthesis' in window)){end&&end();return}
+  if(!window.speechSynthesis||!window.speechSynthesis.getVoices||typeof SpeechSynthesisUtterance==='undefined'||!SpeechSynthesisUtterance.prototype||!('rate' in SpeechSynthesisUtterance.prototype)){end&&end();return}
+  const my=spkId;
   speechSynthesis.cancel();
   const l=/[\u0900-\u097F]/.test(text)?'hi':S.lang,v=pickVoice(l);
   const parts=text.split(/(?<=[.!?\u0964])\s+/).filter(x=>x.trim());
@@ -275,7 +277,7 @@ function speakBrowser(text,end){
     u.pitch=Math.max(.1,bp+(Math.random()*.08-.04)+(qn?.06:0)-(last&&!qn?.04:0));
     u.rate=br+(Math.random()*.06-.03);
     if(i===0)u.onstart=()=>{S.speaking=true};
-    if(last)u.onend=u.onerror=()=>{S.speaking=false;end&&end()};
+    if(last)u.onend=u.onerror=()=>{if(my!==spkId)return;S.speaking=false;end&&end()};
     speechSynthesis.speak(u);
   });
 }
@@ -333,6 +335,7 @@ async function speakGemini(text,end){
   }
 }
 function speak(text,end){
+  end=end||afterSpeak;
   pauseMic();
   spkId++;if(curAudio){curAudio.pause();curAudio=null}
   const t=cfg.tts||{};
@@ -348,68 +351,49 @@ $('#vM').onclick=()=>{setGender('male');speak(S.lang==='hi'?'Namaste, main BODAM
 
 $('#test').onclick=()=>speak(S.lang==='hi'?'Main BODAM hoon, aapka personal AI assistant.':'I am BODAM, your personal AI assistant.');
 
-/* ===== voice in: PCM capture + silence detection + Gemini transcription =====
-   Uses raw microphone samples, not MediaRecorder WebM fragments. */
-let auto=false,busy=false,busyAt=0,micStream=null,micContext=null,micSource=null,micProcessor=null,micStarting=false;
-let speechParts=[],speechActive=false,speechLastAt=0,speechStartAt=0,transcribeQueue=Promise.resolve();
+/* ===== voice in: browser SpeechRecognition (live, smooth, free) ===== */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let auto=false,busy=false,busyAt=0,rec=null,recRun=false,micPaused=false,recErr=0;
 function setBusy(b){busy=b;busyAt=Date.now()}
 function setAuto(on){auto=on;$('#talk').classList.toggle('live',on);$('#talkT').textContent=on?'STOP BODAM':'START BODAM';$('#talkS').textContent=on?'Listening... just speak':'Tap once, then just talk'}
-function pauseMic(){if(micContext&&micContext.state==='running')micContext.suspend().catch(()=>{})}
-function resumeMic(){if(auto&&micContext&&micContext.state==='suspended'&&!S.speaking&&!busy)micContext.resume().catch(()=>{})}
-function stopMic(){try{if(micProcessor){micProcessor.disconnect();micProcessor.onaudioprocess=null}}catch(e){}try{micSource&&micSource.disconnect()}catch(e){}try{if(micContext)micContext.close()}catch(e){}micProcessor=null;micSource=null;micContext=null;if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null}speechParts=[];speechActive=false}
-function blobB64(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(String(r.result).split(',')[1]||'');r.onerror=reject;r.readAsDataURL(blob)})}
-function floatToWav(parts,inputRate){
-  const total=parts.reduce((n,a)=>n+a.length,0);if(!total)throw new Error('No speech audio captured.');
-  const joined=new Float32Array(total);let off=0;for(const a of parts){joined.set(a,off);off+=a.length}
-  const rate=16000,step=inputRate/rate,count=Math.floor(joined.length/step),pcm=new ArrayBuffer(count*2),dv=new DataView(pcm);
-  for(let i=0;i<count;i++){const x=Math.max(-1,Math.min(1,joined[Math.floor(i*step)]));dv.setInt16(i*2,x<0?x*32768:x*32767,true)}
-  const wav=new ArrayBuffer(44+pcm.byteLength),v=new DataView(wav),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
-  w(0,'RIFF');v.setUint32(4,36+pcm.byteLength,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,rate,true);v.setUint32(28,rate*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,pcm.byteLength,true);new Uint8Array(wav,44).set(new Uint8Array(pcm));return new Blob([wav],{type:'audio/wav'});
-}
-async function transcribeGemini(wav){
-  if(!ready('gemini'))throw new Error('Gemini API key Settings mein add karo.');
-  if(!(wav instanceof Blob)||wav.size<2500) return '';
-  const data=await blobB64(wav);
-  // Dedicated speech-to-text model; do not reuse the chat model selected in Settings.
-  const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-transcribe:generateContent',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':cfg.gemini.key},body:JSON.stringify({contents:[{role:'user',parts:[{inlineData:{mimeType:'audio/wav',data}}]}],generationConfig:{temperature:0,audioTranscriptionConfig:{languageCodes:[]}}})});
-  const j=await r.json();if(!r.ok)throw new Error(j.error&&j.error.message||('Gemini transcription error '+r.status));
-  return String(j.candidates?.[0]?.content?.parts?.map(x=>x.text||'').join(' ')||'').trim();
-}
-async function processSpeech(parts,rate){
-  if(!auto||!parts.length||busy||S.speaking)return;
-  const wav=floatToWav(parts,rate);
-  transcribeQueue=transcribeQueue.then(async()=>{
-    if(!auto||busy||S.speaking)return;
-    try{const text=await transcribeGemini(wav);if(text&&auto&&!busy&&!S.speaking){setBusy(true);pauseMic();say(text,'...');await handle(text)}}
-    catch(err){if(auto)say('','Mic transcription error: '+(err.message||'Please check Gemini key and internet.'))}
-  }).catch(()=>{});
-}
-function startPCM(stream){
-  micStream=stream;const Ctx=window.AudioContext||window.webkitAudioContext;if(!Ctx)throw new Error('AudioContext not supported');
-  micContext=new Ctx();micSource=micContext.createMediaStreamSource(stream);micProcessor=micContext.createScriptProcessor(4096,1,1);
-  micProcessor.onaudioprocess=e=>{
-    if(!auto||busy||S.speaking)return;const input=e.inputBuffer.getChannelData(0),copy=new Float32Array(input),now=Date.now();
-    let sum=0;for(let i=0;i<input.length;i++)sum+=input[i]*input[i];const rms=Math.sqrt(sum/input.length);
-    if(rms>0.018){if(!speechActive){speechActive=true;speechStartAt=now;speechParts=[]}speechLastAt=now;speechParts.push(copy)}else if(speechActive){speechParts.push(copy)}
-    if(speechActive&&(now-speechLastAt>850||now-speechStartAt>12000)){
-      const parts=speechParts;speechParts=[];speechActive=false;processSpeech(parts,micContext.sampleRate);
-    }
+function startRec(){
+  if(!SR||recRun||!auto||busy||S.speaking||micPaused)return;
+  const r=new SR();rec=r;
+  r.lang=S.lang==='hi'?'hi-IN':'en-IN';
+  r.interimResults=true;r.continuous=false;r.maxAlternatives=1;
+  let done=false;
+  r.onstart=()=>{recRun=true;S.listening=true};
+  r.onresult=e=>{
+    let t='',fin=false;
+    for(let i=e.resultIndex;i<e.results.length;i++){t+=e.results[i][0].transcript;if(e.results[i].isFinal)fin=true}
+    recErr=0;
+    if(!done)say(t,'...');
+    if(fin&&t.trim()&&!done){done=true;setBusy(true);pauseMic();handle(t.trim())}
   };
-  micSource.connect(micProcessor);micProcessor.connect(micContext.destination);micContext.resume();S.listening=true;
+  r.onerror=e=>{
+    if(e.error==='not-allowed'||e.error==='service-not-allowed'){stopAuto();say('','Mic permission allow karo (Chrome site settings).')}
+    else if(e.error==='network'||e.error==='audio-capture'){if(++recErr>=3){stopAuto();say('','Mic error: '+e.error+'. Internet ya mic check karo.')}}
+  };
+  r.onend=()=>{
+    if(rec===r){recRun=false;S.listening=false}
+    if(auto&&!busy&&!S.speaking&&!micPaused)setTimeout(startRec,250);
+  };
+  try{r.start()}catch(e){recRun=false}
 }
-async function startAuto(){
-  if(micStarting||auto)return;
-  if(!navigator.mediaDevices?.getUserMedia||!(window.AudioContext||window.webkitAudioContext)){say('','This browser does not support continuous microphone recording. Please use updated Chrome.');return}
-  if(!ready('gemini')){say('','Please add your Gemini API key in Settings first.');return}
-  micStarting=true;setAuto(true);
-  try{const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}});if(!auto){stream.getTracks().forEach(t=>t.stop());return}startPCM(stream);say('','BODAM is listening. Speak now.')}
-  catch(e){setAuto(false);stopMic();say('','Microphone start nahi ho saka: '+(e.message||'Please allow microphone permission.'))}
-  finally{micStarting=false}
-}
+function pauseMic(){micPaused=true;S.listening=false;const r=rec;rec=null;recRun=false;try{r&&r.abort()}catch(e){}}
+function resumeMic(){micPaused=false;if(auto&&!S.speaking&&!busy)setTimeout(startRec,250)}
+function stopMic(){pauseMic()}
 function afterSpeak(){setBusy(false);resumeMic()}
-function stopAuto(){setAuto(false);setBusy(false);stopMic();S.speaking=false;S.listening=false;speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}}
+function startAuto(){
+  if(auto)return;
+  if(!SR){say('','Is browser me mic support nahi hai. Chrome use karo.');return}
+  setAuto(true);micPaused=false;recErr=0;say('','Boliye, main sun raha hoon.');startRec();
+}
+function stopAuto(){setAuto(false);setBusy(false);stopMic();micPaused=false;S.speaking=false;S.listening=false;speechSynthesis.cancel();if(curAudio){curAudio.pause();curAudio=null}}
 $('#talk').onclick=()=>auto?stopAuto():startAuto();
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&auto)pauseMic();else if(auto&&!S.speaking&&!busy)resumeMic()});
+// watchdog: if busy gets stuck, recover mic
+setInterval(()=>{if(auto&&busy&&!S.speaking&&Date.now()-busyAt>25000)afterSpeak();if(auto&&!busy&&!S.speaking&&!micPaused&&!recRun)startRec()},3000);
 /* ===== API providers: multi-provider + automatic failover ===== */
 const PROV=[
  {id:'gemini',name:'Gemini',model:'gemini-3.8-flash',kind:'gemini'},
@@ -506,8 +490,8 @@ async function handle(q){
   setLang(detectLang(q));
   const l=q.toLowerCase(),hi=S.lang==='hi';let a=null;
   if(/(setting|सेटिंग|panel|पैनल|menu|मेन्यू|about|terms|privacy|policy|account|profile|प्रोफाइल).*(band|close|बंद|cancel)|^close\b/i.test(l)){closePanel();$('#overlay').classList.remove('show');const m=hi?'Band kar diya.':'Closed.';say(q,m);speak(m,afterSpeak);return}
-  if(/^(stop|bas|bas karo|band karo|chup|chup ho ja|ruko)\b|^बस\b|बंद करो|चुप हो|रुक जाओ|stop listening/i.test(l)){stopAuto();const m=hi?'Theek hai, main ruk gayi. Phir baat karni ho to START dabana.':'Okay, I have stopped. Press START whenever you want to talk again.';say(q,m);speak(m);return}
-  a=route(l,q,hi);
+  if(/^(stop|bas|bas karo|band karo|chup|chup ho ja|ruko)\b|^बस(\s|$)|बंद करो|चुप हो|रुक जाओ|stop listening/i.test(l)){stopAuto();const m=hi?'Theek hai, main ruk gayi. Phir baat karni ho to START dabana.':'Okay, I have stopped. Press START whenever you want to talk again.';say(q,m);speak(m);return}
+  try{a=route(l,q,hi)}catch(e){a=null}
   if(a!==null){}
   else if(/(female|ladki|girl).*(voice|awaaz|awaz)|(voice|awaaz|awaz).*(female|ladki|girl)|(फीमेल|लड़की).*(आवाज|वॉइस|वॉयस)|(आवाज|वॉइस|वॉयस).*(फीमेल|लड़की)/.test(l)){setGender('female');a=hi?'Theek hai, ab female voice.':'Female voice on.'}
   else if(/(male|ladka|boy).*(voice|awaaz|awaz)|(voice|awaaz|awaz).*(male|ladka|boy)|(मेल|लड़का).*(आवाज|वॉइस|वॉयस)|(आवाज|वॉइस|वॉयस).*(मेल|लड़का)/.test(l)){setGender('male');a=hi?'Theek hai, ab male voice.':'Male voice on.'}
@@ -568,7 +552,7 @@ function aboutPanel(){
 function termsPanel(){
   openPanel('TERMS &amp; CONDITIONS','<div class="legal"><small style="color:#8aa8c4">Last updated: 17 November 2026</small><h4>1. ACCEPTANCE</h4><p>By using BODAM you agree to these Terms. If you do not agree, please do not use the app.</p><h4>2. SERVICE</h4><p>BODAM is an AI voice and chat assistant. It connects to the AI services whose API keys you provide.</p><h4>3. API KEYS AND COSTS</h4><p>Your API key is your responsibility. Do not share it with anyone. Usage limits and charges of providers such as Google, OpenAI, Anthropic, Groq and OpenRouter apply to your own account with them. IK Technology is not responsible for these charges.</p><h4>4. AI RESPONSES</h4><p>AI responses can be wrong or incomplete. Do not treat them as medical, legal, financial or other professional advice. Please verify important information yourself.</p><h4>5. ACCEPTABLE USE</h4><p>Do not use BODAM for anything illegal, harmful or abusive, or to cause harm to others.</p><h4>6. MICROPHONE</h4><p>The microphone listens only after you press START. You can stop it at any time with the STOP button or by saying stop.</p><h4>7. AVAILABILITY</h4><p>The service is provided as is. It may stop working because of third-party limits, internet issues or provider outages. We do not guarantee uninterrupted service.</p><h4>8. LIABILITY</h4><p>To the extent permitted by law, IK Technology is not liable for any loss arising from the use of BODAM.</p><h4>9. CHANGES</h4><p>We may update these Terms at any time. Continued use of the app means you accept the updated Terms.</p>'+contactP()+'</div>',settingsPanel)}
 function privacyPanel(){
-  openPanel('PRIVACY POLICY','<div class="legal"><small style="color:#8aa8c4">Last updated: 17 November 2026</small><h4>1. DATA STORED ON YOUR DEVICE</h4><p>Your API keys, model names, custom API URLs, voice settings, name and chat history (last 100 chats) are stored in this browser on this device. Browser storage is not a secure vault; do not use this setup to distribute your own private keys on a public website. IK Technology has no server that receives this data.</p><h4>2. DATA SENT TO THIRD PARTIES</h4><ul><li>Your messages are sent to the provider selected under USE. If automatic backup is enabled, BODAM may send the same request to another connected provider when the selected provider fails</li><li>To create the BODAM voice, the reply text is sent to Google Gemini</li><li>Speech audio is converted to WAV in your browser and sent to Google Gemini for transcription</li><li>Fonts are loaded from Google Fonts</li></ul><p>These services have their own privacy policies, please read them as well.</p><h4>3. MICROPHONE</h4><p>The microphone is used only after you press START. We do not record or store audio.</p><h4>4. NO SALE OF DATA, NO ADS</h4><p>We do not sell your data, show ads or track you.</p><h4>5. DELETING YOUR DATA</h4><p>History: Menu, History, Clear history. Keys: Settings, API Key, clear the field and Save. Everything at once: Settings, Profile, Delete account and all data.</p><h4>6. CHILDREN</h4><p>BODAM is not intended for children under 13.</p><h4>7. CHANGES</h4><p>This policy may change. The latest version is always shown here.</p>'+contactP()+'</div>',settingsPanel)}
+  openPanel('PRIVACY POLICY','<div class="legal"><small style="color:#8aa8c4">Last updated: 17 November 2026</small><h4>1. DATA STORED ON YOUR DEVICE</h4><p>Your API keys, model names, custom API URLs, voice settings, name and chat history (last 100 chats) are stored in this browser on this device. Browser storage is not a secure vault; do not use this setup to distribute your own private keys on a public website. IK Technology has no server that receives this data.</p><h4>2. DATA SENT TO THIRD PARTIES</h4><ul><li>Your messages are sent to the provider selected under USE. If automatic backup is enabled, BODAM may send the same request to another connected provider when the selected provider fails</li><li>To create the BODAM voice, the reply text is sent to Google Gemini</li><li>Speech recognition uses the built-in speech service of your browser (in Chrome, audio is processed by Google)</li><li>Fonts are loaded from Google Fonts</li></ul><p>These services have their own privacy policies, please read them as well.</p><h4>3. MICROPHONE</h4><p>The microphone is used only after you press START. We do not record or store audio.</p><h4>4. NO SALE OF DATA, NO ADS</h4><p>We do not sell your data, show ads or track you.</p><h4>5. DELETING YOUR DATA</h4><p>History: Menu, History, Clear history. Keys: Settings, API Key, clear the field and Save. Everything at once: Settings, Profile, Delete account and all data.</p><h4>6. CHILDREN</h4><p>BODAM is not intended for children under 13.</p><h4>7. CHANGES</h4><p>This policy may change. The latest version is always shown here.</p>'+contactP()+'</div>',settingsPanel)}
 $('#pBody').addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b)return;const a=b.dataset.act;
   if(a==='settings')settingsPanel();else if(a==='about')aboutPanel();else if(a==='terms')termsPanel();else if(a==='privacy')privacyPanel();else if(a==='setvoice'){closePanel();openSet('voice')}
   else if(a==='voices')voicesPanel();else if(a==='hist')histPanel();else if(a==='acct')acctPanel();else if(a==='help')helpPanel();
@@ -601,7 +585,7 @@ function route(l,q,hi){
   if(GO&&/\babout\b|अबाउट|app ke bare|ऐप के बारे/i.test(l)){closePanel();aboutPanel();return hi?'About page khol diya.':'About page opened.'}
   if(GO&&/setting|सेटिंग/i.test(l)){
     if(/voice|awaaz|awaz|आवाज|वॉइस|वॉयस/i.test(l)){closePanel();openSet('voice');return hi?'Voice settings khol di.':'Voice settings opened.'}
-    if(/\bapi\b|\bkey\b|एपीआई|की\b/i.test(l)){closePanel();openSet('api');return hi?'API key settings khol di.':'API key settings opened.'}
+    if(/\bapi\b|\bkey\b|एपीआई|की(\s|$)/i.test(l)){closePanel();openSet('api');return hi?'API key settings khol di.':'API key settings opened.'}
     closePanel();settingsPanel();return hi?'Settings khol di.':'Settings opened.'}
   if(GO&&/\bapi\b.*\bkey\b|एपीआई/i.test(l)){closePanel();openSet('api');return hi?'API key settings khol di.':'API key settings opened.'}
   if(OPN&&/profile|account|प्रोफाइल|अकाउंट/i.test(l)){acctPanel();return hi?'Profile khol di.':'Profile opened.'}
